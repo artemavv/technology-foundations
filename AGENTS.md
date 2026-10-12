@@ -2,10 +2,6 @@
 
 A simple website showing a timeline of events that enabled modern technology, from the Big Bang to 2500 BC. Users scroll through the timeline and view event cards.
 
-## Current state
-
-- Greenfield repo: no code yet. This file is the spec; build from it.
-
 ## Event card
 
 - time: 375 Mya
