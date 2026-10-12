@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import Card from './components/Card.jsx'
 import TimelineBar from './components/TimelineBar.jsx'
 import UnitsBar from './components/UnitsBar.jsx'
+import Sidebar from './components/Sidebar.jsx'
 import EditModal from './components/EditModal.jsx'
 import { adminCredentials, fetchPending, verifyAdmin } from './admin.js'
+import { formatKya } from './format.js'
 import { layoutTimeline } from './timeScale.js'
 
 export default function App() {
@@ -13,10 +15,21 @@ export default function App() {
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 1440 : window.innerWidth,
   )
+  const [blocks, setBlocks] = useState([])
+  const [cats, setCats] = useState({})
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    try {
+      return localStorage.getItem('sidebar') !== 'closed'
+    } catch {
+      return true
+    }
+  })
+  const [mouseX, setMouseX] = useState(null) // pointer x within the stage, or null
   const [pending, setPending] = useState([])
   const [adding, setAdding] = useState(false)
   const [creds, setCreds] = useState(null)
   const scrollRef = useRef(null)
+  const cursorMyaRef = useRef(null) // last age under the cursor line
 
   // admin = login/password GET params that the server accepts
   useEffect(() => {
@@ -50,10 +63,15 @@ export default function App() {
     Promise.all([
       fetch('/data/cards.json').then((r) => r.json()),
       fetch('/data/timeline.json').then((r) => r.json()),
-    ]).then(([cardData, unitData]) => {
+      // the sidebar is optional: a missing file just means no blocks
+      fetch('/data/blocks.json').then((r) => r.json()).catch(() => []),
+      fetch('/data/cats.json').then((r) => r.json()).catch(() => ({})),
+    ]).then(([cardData, unitData, blockData, catData]) => {
       if (!cancelled) {
         setCards(cardData)
         setUnits(unitData)
+        setBlocks(blockData)
+        setCats(catData)
       }
     })
     return () => {
@@ -81,12 +99,24 @@ export default function App() {
     }
   }
 
+  // the stage width changes with the window and with the sidebar
   useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
     measureViewport()
-    const onResize = () => measureViewport()
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    const observer = new ResizeObserver(measureViewport)
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [cards])
+
+  const setSidebar = (open) => {
+    setSidebarOpen(open)
+    try {
+      localStorage.setItem('sidebar', open ? 'open' : 'closed')
+    } catch {
+      // remembering the choice is optional
+    }
+  }
 
   if (!cards) {
     return <div className="loading">Loading timeline…</div>
@@ -94,14 +124,37 @@ export default function App() {
 
   // oldest first = descending mya, leftmost
   const sorted = [...cards, ...pending].sort((a, b) => b.mya - a.mya)
-  const { xs, contentWidth, mapTime } = layoutTimeline(
+  const { xs, contentWidth, mapTime, mapX } = layoutTimeline(
     sorted.map((c) => c.mya),
     viewportWidth,
   )
+  // age under the cursor line; kept after the mouse leaves the stage so the
+  // sidebar doesn't reset when the user moves over to it
+  if (mouseX !== null) cursorMyaRef.current = mapX(scrollLeft + mouseX)
+  const cursorMya = cursorMyaRef.current
   const positioned = sorted.map((card, i) => ({ ...card, x: xs[i] }))
 
   return (
-    <div className="app">
+    <div className={`app${sidebarOpen ? ' sidebar-open' : ''}`}>
+      <div className="main">
+      <div
+        className="stage"
+        onMouseMove={(e) => setMouseX(e.clientX - e.currentTarget.getBoundingClientRect().left)}
+        onMouseLeave={() => setMouseX(null)}
+      >
+      {mouseX !== null && (
+        <>
+          <div className="cursor-line" style={{ left: mouseX }} />
+          <div
+            className="cursor-label"
+            style={{ left: Math.min(Math.max(mouseX, 40), viewportWidth - 40) }}
+          >
+            
+            {/* the timeline ends at 2500 BC (4.5 Kya) */}
+            {formatKya(Math.max(cursorMya, 0.0045) * 1000, 3)}
+          </div>
+        </>
+      )}
       <div
         className="stage-scroll"
         ref={scrollRef}
@@ -122,6 +175,7 @@ export default function App() {
             ))}
           </div>
         </div>
+      </div>
       </div>
       <button
         type="button"
@@ -146,6 +200,27 @@ export default function App() {
         viewportWidth={viewportWidth}
         mapTime={mapTime}
       />
+      </div>
+      {sidebarOpen ? (
+        <Sidebar
+          blocks={blocks}
+          cats={cats}
+          cursorKya={cursorMya === null ? null : cursorMya * 1000}
+          creds={creds}
+          onAdded={(b) => setBlocks((prev) => [...prev, b])}
+          onClose={() => setSidebar(false)}
+        />
+      ) : (
+        <button
+          type="button"
+          className="sidebar-open-btn"
+          title="Show sidebar"
+          aria-label="Show sidebar"
+          onClick={() => setSidebar(true)}
+        >
+          ☰
+        </button>
+      )}
     </div>
   )
 }

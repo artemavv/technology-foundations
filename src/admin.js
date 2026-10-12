@@ -75,3 +75,5 @@ export const wikipediaUrl = (value) =>
     : /^https?:\/\//.test(value)
       ? value
       : `https://en.wikipedia.org/wiki/${value}`
+
+export const createBlock = (creds, fields) => send('POST', '/api/blocks', creds, fields)

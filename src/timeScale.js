@@ -43,7 +43,12 @@ export function xToMya(x) {
 // any point in time from the card anchors.
 export function layoutTimeline(sortedMya, viewportWidth) {
   if (sortedMya.length === 0) {
-    return { xs: [], contentWidth: CARD_WIDTH + PAD * 2, mapTime: () => PAD }
+    return {
+      xs: [],
+      contentWidth: CARD_WIDTH + PAD * 2,
+      mapTime: () => PAD,
+      mapX: () => MAX_MYA,
+    }
   }
 
   const minDelta = CARD_WIDTH + MIN_CLEAR_GAP
@@ -62,6 +67,7 @@ export function layoutTimeline(sortedMya, viewportWidth) {
       xs,
       contentWidth: xs[0] + CARD_WIDTH + PAD,
       mapTime: () => xs[0],
+      mapX: () => sortedMya[0],
     }
   }
 
@@ -99,9 +105,29 @@ export function layoutTimeline(sortedMya, viewportWidth) {
     return last.x
   }
 
+  // Inverse of mapTime: x -> mya. Linear in the raw curve between anchors,
+  // extrapolated (and clamped to the timeline's range) beyond the outer cards.
+  const mapX = (x) => {
+    let r
+    if (x <= first.x) {
+      r = first.r + (x - first.x) / ((anchors[1].x - first.x) / (anchors[1].r - first.r))
+    } else if (x >= last.x) {
+      const prev = anchors[anchors.length - 2]
+      r = last.r + (x - last.x) / ((last.x - prev.x) / (last.r - prev.r))
+    } else {
+      let i = 0
+      while (i < anchors.length - 2 && x > anchors[i + 1].x) i++
+      const a = anchors[i]
+      const b = anchors[i + 1]
+      r = a.r + ((x - a.x) / (b.x - a.x)) * (b.r - a.r)
+    }
+    r = Math.min(Math.max(r, RAW_MIN), RAW_MAX)
+    return Math.pow(r, 1 / POWER)
+  }
+
   // Extend the canvas to cover the end of the timeline (e.g. 2500 BC),
   // which sits just past the newest card.
   const contentWidth = Math.max(last.x + CARD_WIDTH, mapTime(MIN_MYA)) + PAD
 
-  return { xs, contentWidth, mapTime }
+  return { xs, contentWidth, mapTime, mapX }
 }

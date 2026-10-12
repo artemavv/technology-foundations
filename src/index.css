@@ -19,13 +19,55 @@ body,
 }
 
 .app {
+  --sidebar-width: 200px;
   display: flex;
-  flex-direction: column;
   height: 100%;
 }
 
-.stage-scroll {
+.main {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  /* the timeline bar's band; transparent bar lets the cursor line show through */
+  background: linear-gradient(#eef1f5 var(--bar-height), transparent var(--bar-height));
+}
+
+.cursor-line {
+  position: absolute;
+  top: 28px;
+  bottom: 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: #f4a5a5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cursor-label {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #fdeaea;
+  color: #b94a4a;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.stage-scroll {
+  position: relative;
+  z-index: 1;
+  height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
@@ -43,7 +85,6 @@ body,
   height: var(--bar-height);
   width: 100%;
   border-bottom: 1px solid #d8dce2;
-  background: #eef1f5;
 }
 
 .timeline-mark {
@@ -343,6 +384,7 @@ body,
   position: fixed;
   right: 20px;
   bottom: calc(var(--units-height) + 20px);
+  transition: right 0.15s;
   z-index: 50;
   width: 48px;
   height: 48px;
@@ -356,8 +398,98 @@ body,
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
 }
 
+.app.sidebar-open .add-card {
+  right: calc(var(--sidebar-width) + 20px);
+}
+
 .add-card:hover {
   background: #e6e2c8;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #d8dce2;
+  background: #fff;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #7c8794;
+  border-bottom: 1px solid #d8dce2;
+}
+
+.sidebar-header span {
+  flex: 1;
+}
+
+.sidebar-btn,
+.sidebar-open-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #c4cad2;
+  border-radius: 50%;
+  background: #fff;
+  color: #55606e;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sidebar-open-btn {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 50;
+}
+
+.block-list {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.block {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: top 0.4s ease, opacity 0.4s ease;
+}
+
+.block.shown {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block {
+    transition: none;
+  }
 }
 
 .units-bar {

@@ -36,7 +36,17 @@ Open the site with `?login=your-login&password=your-password` in the URL. If the
 
 The API (`server/adminApi.js`) is a Vite plugin, so it runs under `npm run dev` and `npm run preview`. Credentials in a URL end up in browser history and server logs, so use this only on a trusted machine or network.
 
+## Sidebar blocks
+
+The right-hand sidebar reveals blocks from `public/data/blocks.json` (`id`, `title`, `kya` — thousands of years ago, e.g. `13800000` for 13.8 Gya — and `category`), oldest first. Block colors come from `public/data/cats.json` (`{ "<category>": { "label": "…", "color": "#rrggbb" } }`); edit that file to add or recolor categories. Admins get a **+** in the sidebar header to add blocks (title up to 40 characters, start date in the same formats as cards, and a category).
+
 ## Changelog
+
+### 0.3
+
+- A thin cursos line follows the mouse cursor behind the cards, with the date at that position (Gya, Mya or Kya) shown on top of it.
+- Added sidebar blocks to show important technology foundations.
+- Admins can add blocks with a **+** button in the sidebar.
 
 ### 0.2
 

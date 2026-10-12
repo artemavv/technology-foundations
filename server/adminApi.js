@@ -5,6 +5,7 @@
 //                          anonymous -> 'pending' (stored outside public/)
 //   PUT  /api/cards/:id    admin: edit a card; `approve: true` publishes a pending one
 //   PUT  /api/pictures     admin: upload a JPEG/PNG/WebP (raw body); returns { name }
+//   POST /api/blocks       admin: add a sidebar block { title, time, category }; stored as { id, title, kya, category }
 //   DELETE /api/cards/:id  admin: delete a card and its pictures (if no other card uses them)
 // Credentials come from ADMIN_LOGIN / ADMIN_PASSWORD (e.g. in .env.local) and are
 // sent by the page in the X-Admin-Login / X-Admin-Password headers. If either
@@ -18,6 +19,7 @@ const MAX_BODY = 64 * 1024
 const EDITABLE = ['time', 'mya', 'title', 'contents', 'sources', 'wikipedia', 'photo', 'illustration']
 const MAX_PICTURE = 2 * 1024 * 1024
 const PICTURE_NAME = /^[\w-][\w.-]*\.(jpg|png|webp|svg)$/i
+const MAX_TITLE = 40
 const MAX_PENDING = 200
 const SUBMIT_LIMIT = { count: 5, windowMs: 60 * 60 * 1000 } // per IP
 
@@ -86,6 +88,24 @@ function validate(body) {
   return { value: out }
 }
 
+// Sidebar block: { title, time (date text, stored as kya), category (a key of cats.json) }.
+function validateBlock(body, cats) {
+  if (!body || typeof body !== 'object') return { error: 'Invalid body' }
+  if (typeof body.title !== 'string' || !body.title.trim()) {
+    return { error: 'Title is required' }
+  }
+  const title = body.title.trim()
+  if (title.length > MAX_TITLE) return { error: `Title is too long (max ${MAX_TITLE} characters)` }
+  const date = parseDate(body.time)
+  if (date.error) return { error: date.error }
+  if (typeof body.category !== 'string' || !Object.hasOwn(cats, body.category)) {
+    return { error: 'Unknown category' }
+  }
+  // kya = thousands of years ago; round away float noise (0.233 * 1000)
+  const kya = Number((date.mya * 1000).toPrecision(10))
+  return { value: { title, kya, category: body.category } }
+}
+
 // Picture type from the file's first bytes (never trust the name).
 function pictureExt(buf) {
   if (buf.length > 12) {
@@ -137,6 +157,8 @@ export default function adminApi({ login, password }) {
   // pending cards live outside public/ so they are never served to visitors
   const pendingFile = resolve('data/pending.json')
   const picturesDir = resolve('public/pictures')
+  const blocksFile = resolve('public/data/blocks.json')
+  const catsFile = resolve('public/data/cats.json')
   let queue = Promise.resolve() // serialize read-modify-write cycles
   const submissions = new Map() // ip -> timestamps of recent anonymous adds
 
@@ -222,6 +244,29 @@ export default function adminApi({ login, password }) {
     if (req.method === 'GET' && url === '/api/pending') {
       if (!admin) return deny(res)
       return send(res, 200, await readJson(pendingFile, []))
+    }
+
+    if (req.method === 'POST' && url === '/api/blocks') {
+      if (!admin) return deny(res)
+      let body
+      try {
+        body = JSON.parse((await readBody(req)).toString('utf8'))
+      } catch {
+        return send(res, 400, { error: 'Invalid JSON' })
+      }
+      const { value, error } = validateBlock(body, await readJson(catsFile, {}))
+      if (error) return send(res, 400, { error })
+      const block = await locked(async () => {
+        const blocks = await readJson(blocksFile, [])
+        const taken = new Set(blocks.map((b) => b.id))
+        const base = slugify(value.title)
+        let id = base
+        for (let n = 2; taken.has(id); n++) id = `${base}-${n}`
+        const fresh = { id, ...value }
+        await writeJson(blocksFile, [...blocks, fresh])
+        return fresh
+      })
+      return send(res, 201, block)
     }
 
     if (req.method === 'POST' && url === '/api/cards') {
