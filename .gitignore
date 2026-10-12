@@ -10,3 +10,7 @@ dist/
 # editor / OS
 .DS_Store
 *.local
+
+# card content (local; seeded from seed/ by `npm run seed`)
+public/data/
+public/pictures/

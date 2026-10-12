@@ -2,7 +2,7 @@
 
 A simple website showing a timeline of events that enabled modern technology, from the Big Bang to 2500 BC. Scroll horizontally through the timeline and read event cards.
 
-Built with React and Vite. Card and timeline content lives in `public/data/*.json`; card pictures are in `public/pictures/`.
+Built with React and Vite. Card and timeline content lives in `public/data/*.json`; card pictures are in `public/pictures/`. These two directories are git-ignored, so content edits stay out of the repository history. Sample content is kept in `seed/`; `npm run seed` (run automatically before `dev` and `build`) copies any missing files into `public/` without overwriting existing ones.
 
 ## Development
 
@@ -11,6 +11,17 @@ npm install
 npm run dev      # start the dev server
 npm run build    # production build
 ```
+
+## Content and the seed script
+
+Card content (`public/data/` and `public/pictures/`) is git-ignored, so edits to it never enter the repository history. A sample copy is tracked in `seed/` so a fresh clone still has something to show.
+
+`npm run seed` (`scripts/seed.js`) copies `seed/data` and `seed/pictures` into `public/`:
+
+- It only copies files that are missing in `public/`; existing files are never overwritten, so local edits are safe.
+- It runs automatically before `npm run dev` and `npm run build`.
+- To reset a file to its sample version, delete it from `public/` and run `npm run seed`.
+- New cards and pictures stay local. To make them part of the sample set, copy them into `seed/` yourself.
 
 ## Changelog
 

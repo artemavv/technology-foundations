@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "seed": "node scripts/seed.js",
+    "predev": "npm run seed",
+    "prebuild": "npm run seed",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
