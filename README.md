@@ -23,7 +23,24 @@ Card content (`public/data/` and `public/pictures/`) is git-ignored, so edits to
 - To reset a file to its sample version, delete it from `public/` and run `npm run seed`.
 - New cards and pictures stay local. To make them part of the sample set, copy them into `seed/` yourself.
 
+## Admin access
+
+Set credentials in `.env.local` (git-ignored; the server reads them, the browser never does):
+
+```
+ADMIN_LOGIN=your-login
+ADMIN_PASSWORD=your-password
+```
+
+Open the site with `?login=your-login&password=your-password` in the URL. If the server accepts them, every card gets an **E** icon that opens a form for the title, description, sources and Wikipedia link. Saving rewrites `public/data/cards.json`. With no credentials configured, the admin API is off.
+
+The API (`server/adminApi.js`) is a Vite plugin, so it runs under `npm run dev` and `npm run preview`. Credentials in a URL end up in browser history and server logs, so use this only on a trusted machine or network.
+
 ## Changelog
+
+### 0.2
+
+- Admin mode: with valid `login` and `password` GET parameters, cards get an **E** icon that opens an edit form (title, description, sources, Wikipedia link). Changes are saved to `public/data/cards.json` by a server-side API.
 
 ### 0.1
 

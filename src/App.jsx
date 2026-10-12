@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Card from './components/Card.jsx'
 import TimelineBar from './components/TimelineBar.jsx'
 import UnitsBar from './components/UnitsBar.jsx'
+import { adminCredentials, verifyAdmin } from './admin.js'
 import { layoutTimeline } from './timeScale.js'
 
 export default function App() {
@@ -11,7 +12,18 @@ export default function App() {
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 1440 : window.innerWidth,
   )
+  const [creds, setCreds] = useState(null)
   const scrollRef = useRef(null)
+
+  // admin = login/password GET params that the server accepts
+  useEffect(() => {
+    const c = adminCredentials()
+    if (!c) return
+    verifyAdmin(c).then((ok) => ok && setCreds(c))
+  }, [])
+
+  const onSaved = (updated) =>
+    setCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
 
   useEffect(() => {
     let cancelled = false
@@ -79,7 +91,13 @@ export default function App() {
           <TimelineBar mapTime={mapTime} />
           <div className="cards-row">
             {positioned.map((card) => (
-              <Card key={card.id} card={card} left={card.x} />
+              <Card
+                key={card.id}
+                card={card}
+                left={card.x}
+                creds={creds}
+                onSaved={onSaved}
+              />
             ))}
           </div>
         </div>

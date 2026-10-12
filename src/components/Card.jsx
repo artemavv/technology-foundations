@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { wikipediaUrl } from '../admin.js'
+import EditModal from './EditModal.jsx'
 
-export default function Card({ card, left }) {
+export default function Card({ card, left, creds, onSaved }) {
   const anchor = `card-${card.id}`
   const [showSources, setShowSources] = useState(false)
   const sources = card.sources ?? []
+  const [editing, setEditing] = useState(false)
   const [showIllustration, setShowIllustration] = useState(false)
   const sourcesId = `${anchor}-sources`
 
@@ -29,7 +32,7 @@ export default function Card({ card, left }) {
         {card.wikipedia && (
           <a
             className="card-icon"
-            href={`https://en.wikipedia.org/wiki/${card.wikipedia}`}
+            href={wikipediaUrl(card.wikipedia)}
             target="_blank"
             rel="noopener noreferrer"
             title="Read on Wikipedia"
@@ -63,7 +66,27 @@ export default function Card({ card, left }) {
             S
           </button>
         )}
+        {creds && (
+          <button
+            type="button"
+            className="card-icon"
+            title="Edit card"
+            aria-label={`Edit ${card.title}`}
+            aria-haspopup="dialog"
+            onClick={() => setEditing(true)}
+          >
+            E
+          </button>
+        )}
       </div>
+      {editing && (
+        <EditModal
+          card={card}
+          creds={creds}
+          onSaved={onSaved}
+          onClose={() => setEditing(false)}
+        />
+      )}
       {showSources && sources.length > 0 && (
         <section className="card-sources" id={sourcesId}>
           <h3>Sources</h3>
