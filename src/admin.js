@@ -22,15 +22,50 @@ export async function verifyAdmin(creds) {
   }
 }
 
-export async function saveCard(creds, id, fields) {
-  const r = await fetch(`/api/cards/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    headers: { ...headers(creds), 'Content-Type': 'application/json' },
-    body: JSON.stringify(fields),
+async function send(method, url, creds, body) {
+  const r = await fetch(url, {
+    method,
+    headers: { ...(creds ? headers(creds) : {}), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   })
   const data = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error(data.error || `Save failed (${r.status})`)
   return data
+}
+
+// `approve: true` also publishes a pending card.
+export const saveCard = (creds, id, fields, approve = false) =>
+  send('PUT', `/api/cards/${encodeURIComponent(id)}`, creds, { ...fields, approve })
+
+// Upload a JPEG/PNG/WebP; resolves to the stored file name.
+export async function uploadPicture(creds, file) {
+  const r = await fetch('/api/pictures', {
+    method: 'PUT',
+    headers: headers(creds),
+    body: file,
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(data.error || `Upload failed (${r.status})`)
+  return data.name
+}
+
+export async function deleteCard(creds, id) {
+  const r = await fetch(`/api/cards/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: headers(creds),
+  })
+  if (!r.ok) {
+    const data = await r.json().catch(() => ({}))
+    throw new Error(data.error || `Delete failed (${r.status})`)
+  }
+}
+
+// creds may be null: anonymous visitors add cards as 'pending'.
+export const createCard = (creds, fields) => send('POST', '/api/cards', creds, fields)
+
+export async function fetchPending(creds) {
+  const r = await fetch('/api/pending', { headers: headers(creds) })
+  return r.ok ? r.json() : []
 }
 
 // Stored value may be a bare article title (legacy) or a full URL.

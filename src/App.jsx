@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import Card from './components/Card.jsx'
 import TimelineBar from './components/TimelineBar.jsx'
 import UnitsBar from './components/UnitsBar.jsx'
-import { adminCredentials, verifyAdmin } from './admin.js'
+import EditModal from './components/EditModal.jsx'
+import { adminCredentials, fetchPending, verifyAdmin } from './admin.js'
 import { layoutTimeline } from './timeScale.js'
 
 export default function App() {
@@ -12,6 +13,8 @@ export default function App() {
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 1440 : window.innerWidth,
   )
+  const [pending, setPending] = useState([])
+  const [adding, setAdding] = useState(false)
   const [creds, setCreds] = useState(null)
   const scrollRef = useRef(null)
 
@@ -19,11 +22,28 @@ export default function App() {
   useEffect(() => {
     const c = adminCredentials()
     if (!c) return
-    verifyAdmin(c).then((ok) => ok && setCreds(c))
+    verifyAdmin(c).then((ok) => {
+      if (!ok) return
+      setCreds(c)
+      fetchPending(c).then(setPending) // pending cards are visible to admins only
+    })
   }, [])
 
-  const onSaved = (updated) =>
-    setCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+  const onDeleted = (id) => {
+    setCards((prev) => prev.filter((c) => c.id !== id))
+    setPending((prev) => prev.filter((c) => c.id !== id))
+  }
+
+  // a saved/approved/added card lands in the list matching its status
+  const onSaved = (updated) => {
+    const others = (list) => list.filter((c) => c.id !== updated.id)
+    setCards((prev) =>
+      updated.status === 'pending' ? others(prev) : [...others(prev), updated],
+    )
+    setPending((prev) =>
+      updated.status === 'pending' ? [...others(prev), updated] : others(prev),
+    )
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -73,7 +93,7 @@ export default function App() {
   }
 
   // oldest first = descending mya, leftmost
-  const sorted = [...cards].sort((a, b) => b.mya - a.mya)
+  const sorted = [...cards, ...pending].sort((a, b) => b.mya - a.mya)
   const { xs, contentWidth, mapTime } = layoutTimeline(
     sorted.map((c) => c.mya),
     viewportWidth,
@@ -97,11 +117,29 @@ export default function App() {
                 left={card.x}
                 creds={creds}
                 onSaved={onSaved}
+                onDeleted={onDeleted}
               />
             ))}
           </div>
         </div>
       </div>
+      <button
+        type="button"
+        className="add-card"
+        title="Add a card"
+        aria-label="Add a card"
+        onClick={() => setAdding(true)}
+      >
+        +
+      </button>
+      {adding && (
+        <EditModal
+          card={null}
+          creds={creds}
+          onSaved={onSaved}
+          onClose={() => setAdding(false)}
+        />
+      )}
       <UnitsBar
         units={units}
         scrollLeft={scrollLeft}

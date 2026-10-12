@@ -14,3 +14,6 @@ dist/
 # card content (local; seeded from seed/ by `npm run seed`)
 public/data/
 public/pictures/
+
+# pending (unapproved) cards
+data/

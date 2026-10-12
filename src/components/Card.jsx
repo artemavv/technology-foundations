@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { wikipediaUrl } from '../admin.js'
 import EditModal from './EditModal.jsx'
 
-export default function Card({ card, left, creds, onSaved }) {
+export default function Card({ card, left, creds, onSaved, onDeleted }) {
   const anchor = `card-${card.id}`
   const [showSources, setShowSources] = useState(false)
   const sources = card.sources ?? []
@@ -19,7 +19,11 @@ export default function Card({ card, left, creds, onSaved }) {
   }, [showIllustration])
 
   return (
-    <article className="card" id={anchor} style={{ left }}>
+    <article
+      className={`card${card.status === 'pending' ? ' pending' : ''}`}
+      id={anchor}
+      style={{ left }}
+    >
       {card.photo && (
         <img src={`/pictures/${card.photo}`} alt="" loading="lazy" />
       )}
@@ -84,6 +88,7 @@ export default function Card({ card, left, creds, onSaved }) {
           card={card}
           creds={creds}
           onSaved={onSaved}
+          onDeleted={onDeleted}
           onClose={() => setEditing(false)}
         />
       )}

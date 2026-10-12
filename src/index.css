@@ -246,6 +246,42 @@ body,
   border-radius: 6px;
 }
 
+.edit-photo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #55606e;
+}
+
+.edit-photo img {
+  width: 160px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.edit-photo-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-photo-buttons button,
+.edit-photo .file-button {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 12px;
+  border: 1px solid #c4cad2;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+.edit-photo .file-button input {
+  display: none;
+}
+
 .edit-hint {
   font-size: 11px;
   color: #7c8794;
@@ -273,10 +309,42 @@ body,
   cursor: pointer;
 }
 
+.edit-buttons .danger {
+  margin-right: auto;
+  color: #b91c1c;
+  border-color: #b91c1c;
+}
+
 .edit-buttons .primary {
   background: #1f2937;
   border-color: #1f2937;
   color: #fff;
+}
+
+.card.pending {
+  background: #ffedd5;
+  border-color: #f59e0b;
+}
+
+.add-card {
+  position: fixed;
+  right: 20px;
+  bottom: calc(var(--units-height) + 20px);
+  z-index: 50;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: #1f2937;
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+}
+
+.add-card:hover {
+  background: #374151;
 }
 
 .units-bar {
