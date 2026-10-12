@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { wikipediaUrl } from '../admin.js'
+import RichText from './RichText.jsx'
 import EditModal from './EditModal.jsx'
 
 export default function Card({ card, left, creds, onSaved, onDeleted }) {
@@ -31,7 +32,7 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
       <h2 className="card-title">
         <a href={`#${anchor}`}>{card.title}</a>
       </h2>
-      <p className="card-contents">{card.contents}</p>
+      <RichText className="card-contents" text={card.contents} />
       <div className="card-actions">
         {card.wikipedia && (
           <a

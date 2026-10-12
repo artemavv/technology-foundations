@@ -131,6 +131,9 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
             onChange={(e) => setContents(e.target.value)}
             required
           />
+          <span className="edit-hint">
+            A blank line starts a new paragraph. Links: [text](https://…)
+          </span>
         </label>
         <label>
           Sources (one URL per line)

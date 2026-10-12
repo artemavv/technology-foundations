@@ -40,6 +40,7 @@ The API (`server/adminApi.js`) is a Vite plugin, so it runs under `npm run dev` 
 
 ### 0.2
 
+- Card descriptions show paragraphs (blank line = new paragraph) and markdown links `[text](https://…)`, which open in a new tab.
 - Admins can upload a card photo and illustration (JPEG, PNG or WebP, up to 2 MB each) in the edit form; visitors are told to paste image URLs into the description.
 - Admins can delete a card from the edit form; its pictures are removed too unless another card still uses them.
 - Add new cards: a **+** button for everyone opens the edit form. Admin cards are published at once; other visitors' cards are `pending` (orange, admin-only) until an admin clicks **Approve** in the edit form. Pending cards are stored in `data/pending.json` (git-ignored, never served to visitors), with a per-IP limit of 5 submissions per hour.
