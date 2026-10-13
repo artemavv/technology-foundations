@@ -1,0 +1,98 @@
+[
+  {
+    "id": "big-bang",
+    "title": {
+      "en": "Big Bang",
+      "ru": "Большой взрыв",
+      "it": "Big Bang",
+      "de": "Urknall",
+      "es": "Big Bang"
+    },
+    "kya": 13800000,
+    "category": "cosmos"
+  },
+  {
+    "id": "solar-system",
+    "title": {
+      "en": "Solar System forms",
+      "ru": "Рождение Солнечной системы",
+      "it": "Nasce il Sistema solare",
+      "de": "Entstehung des Sonnensystems",
+      "es": "Nace el Sistema Solar"
+    },
+    "kya": 4600000,
+    "category": "cosmos"
+  },
+  {
+    "id": "first-life",
+    "title": {
+      "en": "First life",
+      "ru": "Первая жизнь",
+      "it": "La prima vita",
+      "de": "Erstes Leben",
+      "es": "Primera vida"
+    },
+    "kya": 3800000,
+    "category": "life"
+  },
+  {
+    "id": "multicellular",
+    "title": {
+      "en": "Multicellular life",
+      "ru": "Многоклеточная жизнь",
+      "it": "Vita pluricellulare",
+      "de": "Mehrzelliges Leben",
+      "es": "Vida multicelular"
+    },
+    "kya": 600000,
+    "category": "life"
+  },
+  {
+    "id": "stone-tools",
+    "title": {
+      "en": "Stone tools",
+      "ru": "Каменные орудия",
+      "it": "Strumenti di pietra",
+      "de": "Steinwerkzeuge",
+      "es": "Herramientas de piedra"
+    },
+    "kya": 2600,
+    "category": "tools"
+  },
+  {
+    "id": "fire",
+    "title": {
+      "en": "Control of fire",
+      "ru": "Овладение огнём",
+      "it": "Controllo del fuoco",
+      "de": "Beherrschung des Feuers",
+      "es": "Control del fuego"
+    },
+    "kya": 1000,
+    "category": "tools"
+  },
+  {
+    "id": "agriculture",
+    "title": {
+      "en": "Agriculture begins",
+      "ru": "Начало земледелия",
+      "it": "Inizia l’agricoltura",
+      "de": "Beginn der Landwirtschaft",
+      "es": "Comienza la agricultura"
+    },
+    "kya": 12,
+    "category": "society"
+  },
+  {
+    "id": "writing",
+    "title": {
+      "en": "Writing invented",
+      "ru": "Изобретение письма",
+      "it": "Nasce la scrittura",
+      "de": "Erfindung der Schrift",
+      "es": "Invención de la escritura"
+    },
+    "kya": 5.2,
+    "category": "society"
+  }
+]

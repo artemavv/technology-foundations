@@ -1,0 +1,292 @@
+[
+  {
+    "id": "big-bang",
+    "time": "13.8 Gya",
+    "mya": 13800,
+    "title": {
+      "en": "The Big Bang",
+      "ru": "Большой взрыв",
+      "it": "Il Big Bang",
+      "de": "Der Urknall",
+      "es": "El Big Bang"
+    },
+    "contents": {
+      "en": "The universe expands from an extremely hot, dense state, setting the stage for matter, galaxies, and eventually the atoms that make up every modern technology.",
+      "ru": "Вселенная расширяется из крайне горячего и плотного состояния, создавая условия для вещества, галактик и, в конечном счёте, атомов, из которых состоит любая современная технология.",
+      "it": "L'universo si espande da uno stato estremamente caldo e denso, preparando la scena per la materia, le galassie e, infine, gli atomi che compongono ogni tecnologia moderna.",
+      "de": "Das Universum dehnt sich aus einem extrem heißen, dichten Zustand aus und bereitet die Bühne für Materie, Galaxien und schließlich die Atome, aus denen jede moderne Technik besteht.",
+      "es": "El universo se expande desde un estado extremadamente caliente y denso, preparando el escenario para la materia, las galaxias y, finalmente, los átomos que forman toda la tecnología moderna."
+    },
+    "photo": "big-bang.svg",
+    "wikipedia": {
+      "en": "Big_Bang",
+      "ru": "Большой_взрыв",
+      "it": "Big_Bang",
+      "de": "Urknall",
+      "es": "Big_Bang"
+    },
+    "sources": [
+      "https://map.gsfc.nasa.gov/universe/bb_theory.html"
+    ]
+  },
+  {
+    "id": "first-stars",
+    "time": "13.6 Gya",
+    "mya": 13600,
+    "title": {
+      "en": "First stars ignite"
+    },
+    "contents": {
+      "en": "The first stars forge heavy elements in their cores and disperse them when they die, providing the raw materials for planets and life."
+    },
+    "wikipedia": {
+      "en": "Population_III_star"
+    }
+  },
+  {
+    "id": "earth-forms",
+    "time": "4.54 Gya",
+    "mya": 4540,
+    "title": {
+      "en": "Earth forms"
+    },
+    "contents": {
+      "en": "Accretion of dust and rock builds planet Earth. Its crust, oceans, and atmosphere begin to form over the next hundreds of millions of years."
+    },
+    "photo": "earth.svg",
+    "wikipedia": {
+      "en": "History_of_Earth"
+    }
+  },
+  {
+    "id": "first-life",
+    "time": "3.8 Gya",
+    "mya": 3800,
+    "title": {
+      "en": "First life"
+    },
+    "contents": {
+      "en": "Simple single-celled organisms appear in the oceans. All life — and eventually all intelligence that builds technology — descends from them."
+    },
+    "wikipedia": {
+      "en": "Abiogenesis"
+    }
+  },
+  {
+    "id": "great-oxidation",
+    "time": "2.4 Gya",
+    "mya": 2400,
+    "title": {
+      "en": "Great Oxidation Event"
+    },
+    "contents": {
+      "en": "Cyanobacteria flood the atmosphere with oxygen. This toxic waste product for earlier life makes aerobic energy and complex cells possible."
+    },
+    "wikipedia": {
+      "en": "Great_Oxidation_Event"
+    }
+  },
+  {
+    "id": "eukaryotes",
+    "time": "1.6 Gya",
+    "mya": 1600,
+    "title": {
+      "en": "Eukaryotes appear"
+    },
+    "contents": {
+      "en": "Cells with a nucleus emerge through endosymbiosis — mitochondria were once free-living bacteria. Complex cells are the basis of all multicellular life."
+    },
+    "wikipedia": {
+      "en": "Eukaryote"
+    }
+  },
+  {
+    "id": "multicellular-life",
+    "time": "600 Mya",
+    "mya": 600,
+    "title": {
+      "en": "Multicellular life diversifies"
+    },
+    "contents": {
+      "en": "Cooperation between cells allows larger, specialized organisms. Sponges and early animals appear in the oceans."
+    },
+    "wikipedia": {
+      "en": "Multicellular_organism"
+    }
+  },
+  {
+    "id": "cambrian-explosion",
+    "time": "540 Mya",
+    "mya": 540,
+    "title": {
+      "en": "Cambrian Explosion"
+    },
+    "contents": {
+      "en": "An enormous burst of animal diversity: the major body plans, eyes, and skeletons that define most modern animal groups evolve in tens of millions of years."
+    },
+    "wikipedia": {
+      "en": "Cambrian_explosion"
+    }
+  },
+  {
+    "id": "land-plants",
+    "time": "475 Mya",
+    "mya": 475,
+    "title": {
+      "en": "Plants conquer land"
+    },
+    "contents": {
+      "en": "Moss-like plants colonize the continents, transforming rock into soil and the atmosphere, and creating the fossil fuels we burn today."
+    },
+    "wikipedia": {
+      "en": "Evolutionary_history_of_plants"
+    }
+  },
+  {
+    "id": "tiktaalik",
+    "time": "375 Mya",
+    "mya": 375,
+    "title": {
+      "en": "Tiktaalik emerges"
+    },
+    "contents": {
+      "en": "Tiktaalik is a transitional animal between a fish and a tetrapod. Its front fins show arm-like skeletal structures more akin to those of a crocodile, including a shoulder, elbow and wrist."
+    },
+    "photo": "tiktaalik.svg",
+    "wikipedia": {
+      "en": "Tiktaalik"
+    },
+    "sources": [
+      "https://www.nature.com/articles/nature04639",
+      "https://www.nature.com/articles/nature04637"
+    ],
+    "illustration": "tiktaalik.svg"
+  },
+  {
+    "id": "first-trees",
+    "time": "360 Mya",
+    "mya": 360,
+    "title": {
+      "en": "First forests"
+    },
+    "contents": {
+      "en": "The first trees grow into vast forests. Buried and compressed, this early wood becomes the coal that powers the Industrial Revolution."
+    },
+    "wikipedia": {
+      "en": "Archaeopteris"
+    }
+  },
+  {
+    "id": "dinosaurs",
+    "time": "230 Mya",
+    "mya": 230,
+    "title": {
+      "en": "Dinosaurs dominate"
+    },
+    "contents": {
+      "en": "Dinosaurs rise to dominate the land for 165 million years — until an asteroid impact clears the way for mammals to inherit the Earth."
+    },
+    "wikipedia": {
+      "en": "Dinosaur"
+    }
+  },
+  {
+    "id": "first-flowers",
+    "time": "140 Mya",
+    "mya": 140,
+    "title": {
+      "en": "First flowers bloom"
+    },
+    "contents": {
+      "en": "Angiosperms — flowering plants — evolve and rapidly spread, reshaping ecosystems and enabling most of modern agriculture."
+    },
+    "wikipedia": {
+      "en": "Flowering_plant"
+    }
+  },
+  {
+    "id": "first-hominins",
+    "time": "7 Mya",
+    "mya": 7,
+    "title": {
+      "en": "Hominins diverge"
+    },
+    "contents": {
+      "en": "The lineage leading to humans splits from that of chimpanzees. Bipedal walking frees the hands for tool use."
+    },
+    "wikipedia": {
+      "en": "Hominini"
+    }
+  },
+  {
+    "id": "stone-tools",
+    "time": "2.6 Mya",
+    "mya": 2.6,
+    "title": {
+      "en": "First stone tools"
+    },
+    "contents": {
+      "en": "Flaked stone tools mark the dawn of deliberate technology — the first step on the long road to every machine we build."
+    },
+    "photo": "stone-tools.svg",
+    "wikipedia": {
+      "en": "Oldowan"
+    }
+  },
+  {
+    "id": "control-of-fire",
+    "time": "1 Mya",
+    "mya": 1,
+    "title": {
+      "en": "Control of fire"
+    },
+    "contents": {
+      "en": "Early humans harness fire for warmth, light, and cooking. Cooking unlocks more energy for ever-larger brains."
+    },
+    "wikipedia": {
+      "en": "Control_of_fire_by_early_humans"
+    }
+  },
+  {
+    "id": "agriculture",
+    "time": "10000 BC",
+    "mya": 0.012,
+    "title": {
+      "en": "The Agricultural Revolution"
+    },
+    "contents": {
+      "en": "Humans begin domesticating plants and animals in the Fertile Crescent. Permanent settlements and surplus food make civilization possible."
+    },
+    "photo": "agriculture.svg",
+    "wikipedia": {
+      "en": "Neolithic_Revolution"
+    }
+  },
+  {
+    "id": "writing",
+    "time": "3200 BC",
+    "mya": 0.0052,
+    "title": {
+      "en": "Writing is invented",
+      "ru": "Изобретение письменности",
+      "it": "Nasce la scrittura",
+      "de": "Die Schrift wird erfunden",
+      "es": "Se inventa la escritura"
+    },
+    "contents": {
+      "en": "Sumerian cuneiform records trade and laws. Writing lets knowledge outlive its authors — the basis of science and every stored technology.",
+      "ru": "Шумерская клинопись фиксирует торговлю и законы. Письмо позволяет знаниям пережить своих авторов — это основа науки и любой технологии хранения.",
+      "it": "La scrittura cuneiforme sumera registra commerci e leggi. La scrittura permette alla conoscenza di sopravvivere ai suoi autori: la base della scienza e di ogni tecnologia di archiviazione.",
+      "de": "Die sumerische Keilschrift hält Handel und Gesetze fest. Die Schrift lässt Wissen seine Urheber überdauern – die Grundlage der Wissenschaft und jeder Speichertechnik.",
+      "es": "La escritura cuneiforme sumeria registra el comercio y las leyes. La escritura permite que el conocimiento sobreviva a sus autores: la base de la ciencia y de toda tecnología de almacenamiento."
+    },
+    "photo": "writing.svg",
+    "wikipedia": {
+      "en": "History_of_writing",
+      "ru": "История_письменности",
+      "it": "Storia_della_scrittura",
+      "de": "Geschichte_der_Schrift",
+      "es": "Historia_de_la_escritura"
+    }
+  }
+]

@@ -7,6 +7,10 @@
 //   PUT  /api/pictures     admin: upload a JPEG/PNG/WebP (raw body); returns { name }
 //   POST /api/blocks       admin: add a sidebar block { title, time, category }; stored as { id, title, kya, category }
 //   DELETE /api/cards/:id  admin: delete a card and its pictures (if no other card uses them)
+// Translatable fields (title, contents, wikipedia on cards; title on blocks) are
+// per-language maps { <code>: text } with codes from public/data/languages.json
+// (the first is the default). Plain strings are rejected. On edit the sent
+// languages are merged into the stored map; an empty text removes that language.
 // Credentials come from ADMIN_LOGIN / ADMIN_PASSWORD (e.g. in .env.local) and are
 // sent by the page in the X-Admin-Login / X-Admin-Password headers. If either
 // variable is unset, the admin API is disabled.
@@ -17,6 +21,7 @@ import { parseDate } from './parseDate.js'
 
 const MAX_BODY = 64 * 1024
 const EDITABLE = ['time', 'mya', 'title', 'contents', 'sources', 'wikipedia', 'photo', 'illustration']
+const TEXT_FIELDS = ['title', 'contents', 'wikipedia'] // per-language maps
 const MAX_PICTURE = 2 * 1024 * 1024
 const PICTURE_NAME = /^[\w-][\w.-]*\.(jpg|png|webp|svg)$/i
 const MAX_TITLE = 40
@@ -50,31 +55,44 @@ const isWikipedia = (s) => {
   return hostname === 'wikipedia.org' || hostname.endsWith('.wikipedia.org')
 }
 
-// Returns { value } or { error }.
-function validate(body) {
+// A { lang: text } map with known language codes; texts are trimmed.
+function langMap(v, name, langs) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) {
+    return { error: `${name} must be a map of language code to text` }
+  }
+  const out = {}
+  for (const [code, text] of Object.entries(v)) {
+    if (!langs.includes(code)) return { error: `Unknown language: ${code}` }
+    if (typeof text !== 'string') return { error: `${name} (${code}) must be text` }
+    out[code] = text.trim()
+  }
+  return { value: out }
+}
+
+// Returns { value } or { error }. Text maps may hold empty strings (= remove
+// that language); the caller checks the merged result.
+function validate(body, langs) {
   if (!body || typeof body !== 'object') return { error: 'Invalid body' }
   const out = {}
-  if (typeof body.title !== 'string' || !body.title.trim()) {
-    return { error: 'Title is required' }
+  for (const key of ['title', 'contents']) {
+    const m = langMap(body[key], key === 'title' ? 'Title' : 'Description', langs)
+    if (m.error) return m
+    out[key] = m.value
   }
-  out.title = body.title.trim()
   const date = parseDate(body.time)
   if (date.error) return { error: date.error }
   out.time = date.time
   out.mya = date.mya
-  if (typeof body.contents !== 'string' || !body.contents.trim()) {
-    return { error: 'Description is required' }
-  }
-  out.contents = body.contents.trim()
   if (!Array.isArray(body.sources) || !body.sources.every((s) => typeof s === 'string')) {
     return { error: 'Sources must be a list of URLs' }
   }
   out.sources = body.sources.map((s) => s.trim()).filter(Boolean)
   const bad = out.sources.find((s) => !isHttpUrl(s))
   if (bad) return { error: `Not a valid http(s) URL: ${bad}` }
-  if (typeof body.wikipedia !== 'string') return { error: 'Invalid Wikipedia link' }
-  out.wikipedia = body.wikipedia.trim()
-  if (out.wikipedia && !isWikipedia(out.wikipedia)) {
+  const wiki = langMap(body.wikipedia, 'Wikipedia link', langs)
+  if (wiki.error) return wiki
+  out.wikipedia = wiki.value
+  if (Object.values(out.wikipedia).some((w) => w && !isWikipedia(w))) {
     return { error: 'Wikipedia link must be a wikipedia.org URL' }
   }
   for (const key of ['photo', 'illustration']) {
@@ -88,14 +106,16 @@ function validate(body) {
   return { value: out }
 }
 
-// Sidebar block: { title, time (date text, stored as kya), category (a key of cats.json) }.
-function validateBlock(body, cats) {
+// Sidebar block: { title (language map), time (date text, stored as kya), category (a key of cats.json) }.
+function validateBlock(body, cats, langs) {
   if (!body || typeof body !== 'object') return { error: 'Invalid body' }
-  if (typeof body.title !== 'string' || !body.title.trim()) {
-    return { error: 'Title is required' }
+  const m = langMap(body.title, 'Title', langs)
+  if (m.error) return m
+  const title = Object.fromEntries(Object.entries(m.value).filter(([, t]) => t))
+  if (Object.keys(title).length === 0) return { error: 'Title is required' }
+  if (Object.values(title).some((t) => t.length > MAX_TITLE)) {
+    return { error: `Title is too long (max ${MAX_TITLE} characters)` }
   }
-  const title = body.title.trim()
-  if (title.length > MAX_TITLE) return { error: `Title is too long (max ${MAX_TITLE} characters)` }
   const date = parseDate(body.time)
   if (date.error) return { error: date.error }
   if (typeof body.category !== 'string' || !Object.hasOwn(cats, body.category)) {
@@ -141,15 +161,33 @@ const slugify = (title) =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 40) || 'card'
 
-// Copy validated fields onto a card; empty sources/wikipedia are removed.
-function applyFields(card, value) {
+// Merge sent languages into a stored map (a stored plain string is the default
+// language's text); an empty text removes that language.
+function mergeMap(old, patch, def) {
+  const out = typeof old === 'string' ? { [def]: old } : { ...old }
+  for (const [code, text] of Object.entries(patch)) {
+    if (text) out[code] = text
+    else delete out[code]
+  }
+  return out
+}
+
+// Copy validated fields onto a card; empty sources/wikipedia/pictures are removed.
+// Returns an error message when the card would be left without a title or
+// description in every language (the caller then discards the change).
+function applyFields(card, value, def) {
   for (const key of EDITABLE) {
     const v = value[key]
     if (v === undefined) continue // not sent: leave unchanged
-    if ((key === 'sources' || key === 'wikipedia' || key === 'photo' || key === 'illustration') && v.length === 0) delete card[key]
+    if (TEXT_FIELDS.includes(key)) {
+      card[key] = mergeMap(card[key], v, def)
+      if (key === 'wikipedia' && Object.keys(card[key]).length === 0) delete card[key]
+    } else if (['sources', 'photo', 'illustration'].includes(key) && v.length === 0) delete card[key]
     else card[key] = v
   }
-  return card
+  if (Object.keys(card.title ?? {}).length === 0) return 'Title is required'
+  if (Object.keys(card.contents ?? {}).length === 0) return 'Description is required'
+  return null
 }
 
 export default function adminApi({ login, password }) {
@@ -159,6 +197,7 @@ export default function adminApi({ login, password }) {
   const picturesDir = resolve('public/pictures')
   const blocksFile = resolve('public/data/blocks.json')
   const catsFile = resolve('public/data/cats.json')
+  const languagesFile = resolve('public/data/languages.json')
   let queue = Promise.resolve() // serialize read-modify-write cycles
   const submissions = new Map() // ip -> timestamps of recent anonymous adds
 
@@ -193,6 +232,15 @@ export default function adminApi({ login, password }) {
     }
   }
 
+  // language codes; the first is the default
+  const languages = async () => {
+    const list = await readJson(languagesFile, [])
+    const codes = list.map((l) => l?.code).filter((c) => typeof c === 'string')
+    return codes.length ? codes : ['en']
+  }
+  // slug source: the default-language text if there is one, else any
+  const slugSource = (map, def) => (typeof map === 'string' ? map : (map[def] || Object.values(map).find(Boolean) || ''))
+
   const isAdmin = (req) =>
     Boolean(login && password) &&
     same(req.headers['x-admin-login'], login) &&
@@ -219,12 +267,13 @@ export default function adminApi({ login, password }) {
       send(res, 400, { error: 'Invalid JSON' })
       return null
     }
-    const { value, error } = validate(body)
+    const langs = await languages()
+    const { value, error } = validate(body, langs)
     if (error) {
       send(res, 400, { error })
       return null
     }
-    return { value, approve: body.approve === true }
+    return { value, def: langs[0], approve: body.approve === true }
   }
 
   const deny = async (res) => {
@@ -254,12 +303,13 @@ export default function adminApi({ login, password }) {
       } catch {
         return send(res, 400, { error: 'Invalid JSON' })
       }
-      const { value, error } = validateBlock(body, await readJson(catsFile, {}))
+      const langs = await languages()
+      const { value, error } = validateBlock(body, await readJson(catsFile, {}), langs)
       if (error) return send(res, 400, { error })
       const block = await locked(async () => {
         const blocks = await readJson(blocksFile, [])
         const taken = new Set(blocks.map((b) => b.id))
-        const base = slugify(value.title)
+        const base = slugify(slugSource(value.title, langs[0]))
         let id = base
         for (let n = 2; taken.has(id); n++) id = `${base}-${n}`
         const fresh = { id, ...value }
@@ -283,7 +333,7 @@ export default function adminApi({ login, password }) {
           const pending = await readJson(pendingFile, [])
           if (!admin && pending.length >= MAX_PENDING) return null
           const taken = new Set([...cards, ...pending].map((c) => c.id))
-          const base = slugify(parsed.value.title)
+          const base = slugify(slugSource(parsed.value.title, parsed.def))
           let id = base
           for (let n = 2; taken.has(id); n++) id = `${base}-${n}`
           if (!admin) {
@@ -291,7 +341,9 @@ export default function adminApi({ login, password }) {
             delete parsed.value.photo
             delete parsed.value.illustration
           }
-          const fresh = applyFields({ id }, parsed.value)
+          const fresh = { id }
+          const problem = applyFields(fresh, parsed.value, parsed.def)
+          if (problem) return { error: problem }
           if (admin) {
             await writeJson(cardsFile, [...cards, fresh])
             return { ...fresh, status: 'published' }
@@ -301,6 +353,7 @@ export default function adminApi({ login, password }) {
           return fresh
         })
         if (!card) return send(res, 503, { error: 'Too many cards awaiting review' })
+        if (card.error) return send(res, 400, { error: card.error })
         return send(res, 201, admin ? card : { status: 'pending' })
       } catch {
         return send(res, 500, { error: 'Could not save' })
@@ -334,7 +387,8 @@ export default function adminApi({ login, password }) {
           const published = cards.find((c) => c.id === m[1])
           if (published) {
             const old = [published.photo, published.illustration]
-            applyFields(published, parsed.value)
+            const problem = applyFields(published, parsed.value, parsed.def)
+            if (problem) return { error: problem }
             await writeJson(cardsFile, cards)
             await removeUnused(old, cards)
             return { ...published, status: 'published' }
@@ -343,7 +397,8 @@ export default function adminApi({ login, password }) {
           const waiting = pending.find((c) => c.id === m[1])
           if (!waiting) return null
           const old = [waiting.photo, waiting.illustration]
-          applyFields(waiting, parsed.value)
+          const problem = applyFields(waiting, parsed.value, parsed.def)
+          if (problem) return { error: problem }
           if (!parsed.approve) {
             await writeJson(pendingFile, pending)
             await removeUnused(old, [...cards, ...pending])
@@ -354,6 +409,7 @@ export default function adminApi({ login, password }) {
           await writeJson(pendingFile, pending.filter((c) => c.id !== m[1]))
           return { ...approved, status: 'published' }
         })
+        if (card?.error) return send(res, 400, { error: card.error })
         return card ? send(res, 200, card) : send(res, 404, { error: 'No such card' })
       } catch {
         return send(res, 500, { error: 'Could not save' })

@@ -1,0 +1,93 @@
+[
+  {
+    "id": "hadean",
+    "label": {
+      "en": "Hadean Eon",
+      "ru": "Гадей",
+      "it": "Adeano",
+      "de": "Hadaikum",
+      "es": "Hadeico"
+    },
+    "startMya": 4600,
+    "endMya": 4000,
+    "color": "#c0392b"
+  },
+  {
+    "id": "archean",
+    "label": {
+      "en": "Archean Eon",
+      "ru": "Архей",
+      "it": "Archeano",
+      "de": "Archaikum",
+      "es": "Arcaico"
+    },
+    "startMya": 4000,
+    "endMya": 2500,
+    "color": "#e67e22"
+  },
+  {
+    "id": "proterozoic",
+    "label": {
+      "en": "Proterozoic Eon",
+      "ru": "Протерозой",
+      "it": "Proterozoico",
+      "de": "Proterozoikum",
+      "es": "Proterozoico"
+    },
+    "startMya": 2500,
+    "endMya": 541,
+    "color": "#f1c40f"
+  },
+  {
+    "id": "paleozoic",
+    "label": {
+      "en": "Paleozoic Era",
+      "ru": "Палеозой",
+      "it": "Paleozoico",
+      "de": "Paläozoikum",
+      "es": "Paleozoico"
+    },
+    "startMya": 541,
+    "endMya": 252,
+    "color": "#27ae60"
+  },
+  {
+    "id": "mesozoic",
+    "label": {
+      "en": "Mesozoic Era",
+      "ru": "Мезозой",
+      "it": "Mesozoico",
+      "de": "Mesozoikum",
+      "es": "Mesozoico"
+    },
+    "startMya": 252,
+    "endMya": 66,
+    "color": "#2980b9"
+  },
+  {
+    "id": "cenozoic",
+    "label": {
+      "en": "Cenozoic Era",
+      "ru": "Кайнозой",
+      "it": "Cenozoico",
+      "de": "Känozoikum",
+      "es": "Cenozoico"
+    },
+    "startMya": 66,
+    "endMya": 0.0117,
+    "color": "#8e44ad"
+  },
+  {
+    "id": "holocene",
+    "label": {
+      "en": "Holocene Epoch",
+      "ru": "Голоцен",
+      "it": "Olocene",
+      "de": "Holozän",
+      "es": "Holoceno"
+    },
+    "startMya": 0.0117,
+    "endMya": -0.0045,
+    "color": "#7f8c8d"
+  }
+]

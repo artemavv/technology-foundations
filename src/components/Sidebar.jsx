@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { formatKya } from '../format.js'
 import BlockModal from './BlockModal.jsx'
+import { useLang } from '../i18n.jsx'
 
 // readable text color (black/white) for a hex background
 function textOn(hex) {
@@ -34,6 +35,7 @@ function stackOffset(count, listHeight) {
 // crossed its age left-to-right (cursorKya <= block.kya) and hides again when
 // the cursor crosses back. Shown blocks stack from the top, oldest first.
 export default function Sidebar({ blocks, cats, cursorKya, creds, onAdded, onClose }) {
+  const { pick, t } = useLang()
   const [adding, setAdding] = useState(false)
   const [listHeight, setListHeight] = useState(600)
   const listRef = useRef(null)
@@ -52,15 +54,15 @@ export default function Sidebar({ blocks, cats, cursorKya, creds, onAdded, onClo
     cursorKya === null ? 0 : sorted.filter((b) => cursorKya <= b.kya).length
   const offset = stackOffset(shownCount, listHeight)
   return (
-    <aside className="sidebar" aria-label="Blocks">
+    <aside className="sidebar" aria-label={t('blocks')}>
       <div className="sidebar-header">
-        <span>Blocks</span>
+        <span>{t('blocks')}</span>
         {creds && (
           <button
             type="button"
             className="sidebar-btn"
-            title="Add a block"
-            aria-label="Add a block"
+            title={t('addBlock')}
+            aria-label={t('addBlock')}
             onClick={() => setAdding(true)}
           >
             +
@@ -69,8 +71,8 @@ export default function Sidebar({ blocks, cats, cursorKya, creds, onAdded, onClo
         <button
           type="button"
           className="sidebar-btn"
-          title="Hide sidebar"
-          aria-label="Hide sidebar"
+          title={t('hideSidebar')}
+          aria-label={t('hideSidebar')}
           onClick={onClose}
         >
           ×
@@ -89,9 +91,9 @@ export default function Sidebar({ blocks, cats, cursorKya, creds, onAdded, onClo
                 color: textOn(color),
                 top: shown ? i * (BLOCK_H + GAP) - offset : listHeight,
               }}
-              title={`${formatKya(b.kya)} · ${cats[b.category]?.label ?? b.category}`}
+              title={`${formatKya(b.kya)} · ${pick(cats[b.category]?.label) || b.category}`}
             >
-              {b.title}
+              {pick(b.title)}
             </li>
           )
         })}

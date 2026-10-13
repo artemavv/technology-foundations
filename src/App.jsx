@@ -3,12 +3,15 @@ import Card from './components/Card.jsx'
 import TimelineBar from './components/TimelineBar.jsx'
 import UnitsBar from './components/UnitsBar.jsx'
 import Sidebar from './components/Sidebar.jsx'
+import LangSwitcher from './components/LangSwitcher.jsx'
+import { useLang } from './i18n.jsx'
 import EditModal from './components/EditModal.jsx'
 import { adminCredentials, fetchPending, verifyAdmin } from './admin.js'
 import { formatKya } from './format.js'
 import { layoutTimeline } from './timeScale.js'
 
 export default function App() {
+  const { t } = useLang()
   const [cards, setCards] = useState(null)
   const [units, setUnits] = useState([])
   const [scrollLeft, setScrollLeft] = useState(0)
@@ -119,7 +122,7 @@ export default function App() {
   }
 
   if (!cards) {
-    return <div className="loading">Loading timeline…</div>
+    return <div className="loading">{t('loading')}</div>
   }
 
   // oldest first = descending mya, leftmost
@@ -160,7 +163,7 @@ export default function App() {
         ref={scrollRef}
         onScroll={(e) => setScrollLeft(e.currentTarget.scrollLeft)}
       >
-        <div className="stage-content" style={{ width: contentWidth }}>
+        <div className="stage-content" style={{ width: `calc(${contentWidth}px + var(--sidebar-reserve))` }}>
           <TimelineBar mapTime={mapTime} />
           <div className="cards-row">
             {positioned.map((card) => (
@@ -180,8 +183,8 @@ export default function App() {
       <button
         type="button"
         className="add-card"
-        title="Add a card"
-        aria-label="Add a card"
+        title={t('addCard')}
+        aria-label={t('addCard')}
         onClick={() => setAdding(true)}
       >
         +
@@ -201,6 +204,7 @@ export default function App() {
         mapTime={mapTime}
       />
       </div>
+      <LangSwitcher />
       {sidebarOpen ? (
         <Sidebar
           blocks={blocks}
@@ -214,8 +218,8 @@ export default function App() {
         <button
           type="button"
           className="sidebar-open-btn"
-          title="Show sidebar"
-          aria-label="Show sidebar"
+          title={t('showSidebar')}
+          aria-label={t('showSidebar')}
           onClick={() => setSidebar(true)}
         >
           ☰

@@ -24,6 +24,13 @@ body,
   height: 100%;
 }
 
+.app {
+  --sidebar-reserve: 0px; /* extra scroll room so cards can clear the open sidebar */
+}
+.app.sidebar-open {
+  --sidebar-reserve: var(--sidebar-width);
+}
+
 .main {
   flex: 1;
   min-width: 0;
@@ -109,6 +116,37 @@ body,
   white-space: nowrap;
 }
 
+.card-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--card-width);
+  display: flex;
+  flex-direction: column;
+}
+.card-col::before,
+.card-tail::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 1px;
+  background: #b8bec7;
+  pointer-events: none;
+}
+.card-col::before {
+  top: 0;
+  height: 12px; /* the gap above the card */
+}
+.card-tail {
+  position: relative;
+  flex: 1;
+}
+.card-tail::before {
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(#b8bec7, transparent 50%);
+}
+
 .cards-row {
   position: absolute;
   top: var(--bar-height);
@@ -118,12 +156,14 @@ body,
 }
 
 .card {
-  position: absolute;
-  top: 12px;
-  width: var(--card-width);
+  position: relative;
+  flex: none;
+  margin-top: 12px;
+  width: 100%;
   background: #ffffff;
   border: 1px solid #d8dce2;
-  border-radius: 8px;
+  border-radius: 0 8px 8px 0; /* square on the left, where the vertical line runs */
+  border-left-color: #b8bec7;
   padding: 14px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
@@ -407,10 +447,17 @@ body,
 }
 
 .sidebar {
+  /* a panel over the right edge, below the timeline bar: the timeline spans
+     the full width and stays fully visible */
+  position: fixed;
+  top: var(--bar-height);
+  right: 0;
+  bottom: 0;
+  z-index: 40;
   width: var(--sidebar-width);
-  flex: none;
   display: flex;
   flex-direction: column;
+  border-top: 1px solid #d8dce2;
   border-left: 1px solid #d8dce2;
   background: #fff;
 }
@@ -450,8 +497,11 @@ body,
 
 .sidebar-open-btn {
   position: fixed;
-  top: 8px;
-  right: 8px;
+  top: calc(var(--bar-height) + 8px); /* just below the timeline bar */
+  right: 10px; /* same column and size as the language switcher */
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
   z-index: 50;
 }
 
@@ -499,6 +549,9 @@ body,
   background: #eef1f5;
   overflow: hidden;
 }
+.app.sidebar-open .units-bar {
+  margin-right: var(--sidebar-width);
+}
 
 .unit-chip {
   position: absolute;
@@ -521,4 +574,56 @@ body,
 .loading {
   padding: 40px;
   color: #55606e;
+}
+.lang-switcher {
+  position: fixed;
+  top: 8px;
+  right: 10px;
+  z-index: 60;
+}
+.lang-flag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e5e7eb;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.4);
+  cursor: pointer;
+}
+.lang-flag:hover {
+  box-shadow: 0 0 0 2px #676767;
+}
+.lang-flag svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.lang-flag .flag-code {
+  font-size: 10px;
+  font-weight: 700;
+  color: #55606e;
+}
+.lang-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.card-fallback {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid #c4cad2;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #6b7280;
 }

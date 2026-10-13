@@ -68,12 +68,4 @@ export async function fetchPending(creds) {
   return r.ok ? r.json() : []
 }
 
-// Stored value may be a bare article title (legacy) or a full URL.
-export const wikipediaUrl = (value) =>
-  !value
-    ? ''
-    : /^https?:\/\//.test(value)
-      ? value
-      : `https://en.wikipedia.org/wiki/${value}`
-
 export const createBlock = (creds, fields) => send('POST', '/api/blocks', creds, fields)

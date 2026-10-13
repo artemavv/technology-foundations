@@ -1,0 +1,42 @@
+{
+  "cosmos": {
+    "label": {
+      "en": "Cosmos",
+      "ru": "Космос",
+      "it": "Cosmo",
+      "de": "Kosmos",
+      "es": "Cosmos"
+    },
+    "color": "#6d5acf"
+  },
+  "life": {
+    "label": {
+      "en": "Life",
+      "ru": "Жизнь",
+      "it": "Vita",
+      "de": "Leben",
+      "es": "Vida"
+    },
+    "color": "#2f9e6b"
+  },
+  "tools": {
+    "label": {
+      "en": "Tools",
+      "ru": "Орудия",
+      "it": "Strumenti",
+      "de": "Werkzeuge",
+      "es": "Herramientas"
+    },
+    "color": "#d9822b"
+  },
+  "society": {
+    "label": {
+      "en": "Society",
+      "ru": "Общество",
+      "it": "Società",
+      "de": "Gesellschaft",
+      "es": "Sociedad"
+    },
+    "color": "#3b82c4"
+  }
+}

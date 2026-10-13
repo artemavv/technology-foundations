@@ -1,24 +1,29 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { createCard, deleteCard, saveCard, uploadPicture, wikipediaUrl } from '../admin.js'
+import { createCard, deleteCard, saveCard, uploadPicture } from '../admin.js'
+import { useLang, wikipediaUrl } from '../i18n.jsx'
 
-const NEW_CARD = { title: '', time: '', contents: '', sources: [], wikipedia: '' }
+const NEW_CARD = { title: {}, time: '', contents: {}, sources: [], wikipedia: {} }
 
 // card = null -> add a new card (anyone; pending unless creds are admin's)
 export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) {
+  const { lang, def, own, pick, defaultText, t } = useLang()
+  const code = lang.toUpperCase()
   const isNew = !card
   card = card ?? NEW_CARD
   const isPending = card.status === 'pending'
   const [submitted, setSubmitted] = useState(false)
-  const [title, setTitle] = useState(card.title)
+  const [title, setTitle] = useState(own(card.title))
   const [time, setTime] = useState(card.time)
-  const [contents, setContents] = useState(card.contents)
+  const [contents, setContents] = useState(own(card.contents))
   const [sources, setSources] = useState((card.sources ?? []).join('\n'))
-  const [wikipedia, setWikipedia] = useState(wikipediaUrl(card.wikipedia))
+  const [wikipedia, setWikipedia] = useState(wikipediaUrl(own(card.wikipedia), lang))
   const [pictures, setPictures] = useState({
     photo: card.photo ?? '',
     illustration: card.illustration ?? '',
   })
+  // a translation may be left empty (the card then falls back to the default language)
+  const required = isNew || lang === def
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -32,12 +37,13 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
     e.preventDefault()
     setSaving(true)
     setError('')
+    // only the current language is sent; the server merges it into the card
     const fields = {
-      title,
+      title: { [lang]: title },
       time,
-      contents,
+      contents: { [lang]: contents },
       sources: sources.split('\n'),
-      wikipedia,
+      wikipedia: { [lang]: wikipedia },
       ...(creds ? pictures : {}), // only admins can attach pictures
     }
     try {
@@ -61,13 +67,13 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
 
   if (submitted) {
     return createPortal(
-      <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Card submitted">
+      <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={t('cardSubmitted')}>
         <div className="edit-form">
-          <h2>Thank you!</h2>
-          <p>Your card was submitted and will appear once an admin approves it.</p>
+          <h2>{t('thanks')}</h2>
+          <p>{t('submitted')}</p>
           <div className="edit-buttons">
             <button type="button" className="primary" onClick={onClose}>
-              Close
+              {t('close')}
             </button>
           </div>
         </div>
@@ -92,7 +98,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
   }
 
   const remove = async () => {
-    if (!window.confirm(`Delete "${card.title}" and its pictures? This cannot be undone.`)) return
+    if (!window.confirm(t('confirmDelete', pick(card.title)))) return
     setSaving(true)
     setError('')
     try {
@@ -106,37 +112,47 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
   }
 
   return createPortal(
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={isNew ? 'Add card' : 'Edit card'}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={isNew ? t('formAddCard', code) : t('formEditCard', code)}>
       <form className="edit-form" onSubmit={submit}>
-        <h2>{isNew ? 'Add card' : isPending ? 'Edit pending card' : 'Edit card'}</h2>
+        <h2>
+          {isNew
+            ? t('formAddCard', code)
+            : isPending
+              ? t('formEditPending', code)
+              : t('formEditCard', code)}
+        </h2>
         <label>
-          Title
-          <input value={title} onChange={(e) => setTitle(e.target.value)} required />
+          {t('title')}
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={lang === def ? '' : defaultText(card.title)}
+            required={required}
+          />
         </label>
         <label>
-          Date
+          {t('date')}
           <input
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            placeholder="e.g. 12 Gya, 300 Mya, 233 Kya, 3200 BC"
+            placeholder={t('datePlaceholder')}
             required
           />
-          <span className="edit-hint">A bare number means years ago.</span>
+          <span className="edit-hint">{t('dateHint')}</span>
         </label>
         <label>
-          Description
+          {t('description')}
           <textarea
             rows={6}
             value={contents}
             onChange={(e) => setContents(e.target.value)}
-            required
+            placeholder={lang === def ? '' : defaultText(card.contents)}
+            required={required}
           />
-          <span className="edit-hint">
-            A blank line starts a new paragraph. Links: [text](https://…)
-          </span>
+          <span className="edit-hint">{t('descriptionHint')}</span>
         </label>
         <label>
-          Sources (one URL per line)
+          {t('sourcesField')}
           <textarea
             rows={4}
             value={sources}
@@ -144,26 +160,27 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
           />
         </label>
         <label>
-          Wikipedia link
+          {t('wikipediaLink')}
           <input
             type="url"
             value={wikipedia}
             onChange={(e) => setWikipedia(e.target.value)}
-            placeholder="https://en.wikipedia.org/wiki/…"
+            placeholder={`https://${lang}.wikipedia.org/wiki/…`}
           />
+          {lang !== def && <span className="edit-hint">{t('wikipediaHint')}</span>}
         </label>
         {creds ? (
           <>
             {[
-              ['photo', 'Photo', 'Shown on the card; 640×360 (16:9) works best.'],
-              ['illustration', 'Illustration', 'Shown full-screen from the I icon.'],
+              ['photo', t('photo'), t('photoHint')],
+              ['illustration', t('illustration'), t('illustrationHint')],
             ].map(([key, label, hint]) => (
               <div className="edit-photo" key={key}>
                 {label}
                 {pictures[key] && <img src={`/pictures/${pictures[key]}`} alt="" />}
                 <div className="edit-photo-buttons">
                   <label className="file-button">
-                    {pictures[key] ? 'Replace…' : 'Upload…'}
+                    {pictures[key] ? t('replace') : t('upload')}
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -177,12 +194,12 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
                       onClick={() => setPictures((p) => ({ ...p, [key]: '' }))}
                       disabled={saving}
                     >
-                      Remove
+                      {t('remove')}
                     </button>
                   )}
                 </div>
                 <span className="edit-hint">
-                  {hint} JPEG, PNG or WebP, up to 2 MB. Applied on Save.
+                  {hint} {t('pictureLimits')}
                 </span>
               </div>
             ))}
@@ -190,7 +207,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
         ) : (
           isNew && (
             <p className="edit-hint">
-              Want to add images? Paste the image URLs into the description.
+              {t('pasteImages')}
             </p>
           )
         )}
@@ -203,14 +220,14 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
               onClick={remove}
               disabled={saving}
             >
-              Delete
+              {t('delete')}
             </button>
           )}
           <button type="button" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('cancel')}
           </button>
           <button type="submit" className={isPending ? '' : 'primary'} disabled={saving}>
-            {saving ? 'Saving…' : isNew && !creds ? 'Submit' : 'Save'}
+            {saving ? t('saving') : isNew && !creds ? t('submit') : t('save')}
           </button>
           {isPending && (
             <button
@@ -219,7 +236,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
               disabled={saving}
               onClick={(e) => submit(e, true)}
             >
-              Approve
+              {t('approve')}
             </button>
           )}
         </div>

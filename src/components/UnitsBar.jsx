@@ -1,4 +1,7 @@
+import { useLang } from '../i18n.jsx'
+
 export default function UnitsBar({ units, scrollLeft, viewportWidth, mapTime }) {
+  const { pick } = useLang()
   const viewRight = scrollLeft + viewportWidth
   const visible = units
     .map((u) => {
@@ -21,7 +24,7 @@ export default function UnitsBar({ units, scrollLeft, viewportWidth, mapTime }) 
             width: u.x2 - u.x1,
           }}
         >
-          {u.label}
+          {pick(u.label)}
         </span>
       ))}
     </div>

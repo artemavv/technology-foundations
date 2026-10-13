@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { createBlock } from '../admin.js'
+import { useLang } from '../i18n.jsx'
 
 export default function BlockModal({ cats, creds, onSaved, onClose }) {
+  const { lang, pick, t } = useLang()
   const keys = Object.keys(cats)
   const [title, setTitle] = useState('')
   const [time, setTime] = useState('')
@@ -21,7 +23,7 @@ export default function BlockModal({ cats, creds, onSaved, onClose }) {
     setSaving(true)
     setError('')
     try {
-      onSaved(await createBlock(creds, { title, time, category }))
+      onSaved(await createBlock(creds, { title: { [lang]: title }, time, category }))
       onClose()
     } catch (err) {
       setError(err.message)
@@ -30,34 +32,34 @@ export default function BlockModal({ cats, creds, onSaved, onClose }) {
   }
 
   return createPortal(
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Add block">
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={t('addBlockForm', lang.toUpperCase())}>
       <form className="edit-form" onSubmit={submit}>
-        <h2>Add block</h2>
+        <h2>{t('addBlockForm', lang.toUpperCase())}</h2>
         <label>
-          Title
+          {t('blockTitleField')}
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={40}
-            placeholder="2–3 words"
+            placeholder={t('blockTitlePlaceholder')}
             required
           />
         </label>
         <label>
-          Start date
+          {t('startDate')}
           <input
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            placeholder="e.g. 12 Gya, 300 Mya, 233 Kya, 3200 BC"
+            placeholder={t('datePlaceholder')}
             required
           />
         </label>
         <label>
-          Category
+          {t('category')}
           <select value={category} onChange={(e) => setCategory(e.target.value)} required>
             {keys.map((k) => (
               <option key={k} value={k}>
-                {cats[k].label ?? k}
+                {pick(cats[k].label) || k}
               </option>
             ))}
           </select>
@@ -65,10 +67,10 @@ export default function BlockModal({ cats, creds, onSaved, onClose }) {
         {error && <p className="edit-error" role="alert">{error}</p>}
         <div className="edit-buttons">
           <button type="button" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('cancel')}
           </button>
           <button type="submit" className="primary" disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('saving') : t('save')}
           </button>
         </div>
       </form>

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { wikipediaUrl } from '../admin.js'
+import { useLang } from '../i18n.jsx'
 import RichText from './RichText.jsx'
 import EditModal from './EditModal.jsx'
 
 export default function Card({ card, left, creds, onSaved, onDeleted }) {
+  const { pick, has, def, languages, lang, wikiHref, t } = useLang()
+  const title = pick(card.title)
+  const defLabel = languages.find((l) => l.code === def)?.label ?? def
   const anchor = `card-${card.id}`
   const [showSources, setShowSources] = useState(false)
   const sources = card.sources ?? []
@@ -19,29 +22,38 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [showIllustration])
 
+  // the column holds the card and its vertical line: solid beside the card,
+  // then fading out over the first half of the space below it
   return (
+    <div className="card-col" style={{ left }}>
     <article
       className={`card${card.status === 'pending' ? ' pending' : ''}`}
       id={anchor}
-      style={{ left }}
     >
       {card.photo && (
         <img src={`/pictures/${card.photo}`} alt="" loading="lazy" />
       )}
-      <div className="card-time">{card.time}</div>
+      <div className="card-time">
+        {card.time}
+        {lang !== def && !(has(card.title) && has(card.contents)) && (
+          <span className="card-fallback" title={t('fallbackTip', defLabel)}>
+            {def.toUpperCase()}
+          </span>
+        )}
+      </div>
       <h2 className="card-title">
-        <a href={`#${anchor}`}>{card.title}</a>
+        <a href={`#${anchor}`}>{title}</a>
       </h2>
-      <RichText className="card-contents" text={card.contents} />
+      <RichText className="card-contents" text={pick(card.contents)} />
       <div className="card-actions">
-        {card.wikipedia && (
+        {wikiHref(card.wikipedia) && (
           <a
             className="card-icon"
-            href={wikipediaUrl(card.wikipedia)}
+            href={wikiHref(card.wikipedia)}
             target="_blank"
             rel="noopener noreferrer"
-            title="Read on Wikipedia"
-            aria-label={`${card.title} on Wikipedia`}
+            title={t('readOnWikipedia')}
+            aria-label={t('wikipediaOn', title)}
           >
             W
           </a>
@@ -50,8 +62,8 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
           <button
             type="button"
             className="card-icon"
-            title="Illustration"
-            aria-label={`Illustration for ${card.title}`}
+            title={t('illustration')}
+            aria-label={t('illustrationFor', title)}
             aria-haspopup="dialog"
             onClick={() => setShowIllustration(true)}
           >
@@ -62,8 +74,8 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
           <button
             type="button"
             className="card-icon"
-            title="Sources"
-            aria-label={`Sources for ${card.title}`}
+            title={t('sources')}
+            aria-label={t('sourcesFor', title)}
             aria-expanded={showSources}
             aria-controls={sourcesId}
             onClick={() => setShowSources((v) => !v)}
@@ -75,8 +87,8 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
           <button
             type="button"
             className="card-icon"
-            title="Edit card"
-            aria-label={`Edit ${card.title}`}
+            title={t('editCard')}
+            aria-label={t('editFor', title)}
             aria-haspopup="dialog"
             onClick={() => setEditing(true)}
           >
@@ -95,7 +107,7 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
       )}
       {showSources && sources.length > 0 && (
         <section className="card-sources" id={sourcesId}>
-          <h3>Sources</h3>
+          <h3>{t('sources')}</h3>
           <ol>
             {sources.map((url) => (
               <li key={url}>
@@ -118,25 +130,27 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
             className="modal-backdrop"
             role="dialog"
             aria-modal="true"
-            aria-label={card.title}
+            aria-label={title}
             onClick={() => setShowIllustration(false)}
           >
             <button
               type="button"
               className="modal-close"
-              aria-label="Close"
+              aria-label={t('close')}
               onClick={() => setShowIllustration(false)}
             >
               ×
             </button>
             <img
               src={`/pictures/${card.illustration}`}
-              alt={card.title}
+              alt={title}
               onClick={(e) => e.stopPropagation()}
             />
           </div>,
           document.body,
         )}
     </article>
+    <div className="card-tail" />
+    </div>
   )
 }
