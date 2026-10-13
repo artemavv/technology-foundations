@@ -103,6 +103,11 @@ body,
   align-items: center;
 }
 
+.timeline-mark.at-start {
+  transform: none;
+  align-items: flex-start;
+}
+
 .timeline-mark .tick {
   width: 1px;
   height: 14px;

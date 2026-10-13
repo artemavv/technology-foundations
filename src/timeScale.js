@@ -13,9 +13,10 @@ export const MAX_MYA = 13800     // the Big Bang
 export const POWER = 1 / 3
 
 export const PAD = 100
+export const START_X = 40 // left edge of the first card, from the screen's left side
 export const CARD_WIDTH = 300
 export const MIN_CLEAR_GAP = 100 // min empty space between adjacent card edges
-export const MAX_GAP_RATIO = 0.5 // max left-edge-to-left-edge distance, vs viewport
+export const MAX_GAP_RATIO = 0.3825 // max left-edge-to-left-edge distance, vs viewport
 
 // Reference canvas for the raw (pre-clamp) curve. Only differences matter;
 // the span sets how large the desired gaps are versus the clamp bounds.
@@ -55,7 +56,7 @@ export function layoutTimeline(sortedMya, viewportWidth) {
   const maxDelta = Math.max(minDelta, MAX_GAP_RATIO * viewportWidth)
 
   const rawXs = sortedMya.map(timeToX)
-  const xs = [PAD]
+  const xs = [START_X]
   for (let i = 1; i < rawXs.length; i++) {
     const desired = rawXs[i] - rawXs[i - 1]
     const delta = Math.min(Math.max(desired, minDelta), maxDelta)
@@ -83,11 +84,10 @@ export function layoutTimeline(sortedMya, viewportWidth) {
 
   const mapTime = (mya) => {
     const r = raw(mya)
-    // Beyond the outermost cards, extrapolate along the curve but cap the
-    // extension at one max gap so the tail stays reasonable.
-    if (r >= first.r) {
-      return Math.max(extrapolate(first, anchors[1], r), first.x - maxDelta)
-    }
+    // The timeline starts at the first card: anything older (the 13.8 Gya
+    // marking) sits on its left edge. Past the newest card, extrapolate along
+    // the curve but cap the extension at one max gap so the tail stays reasonable.
+    if (r >= first.r) return first.x
     if (r <= last.r) {
       return Math.min(
         extrapolate(anchors[anchors.length - 2], last, r),
