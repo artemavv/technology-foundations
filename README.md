@@ -53,6 +53,13 @@ Translatable fields are maps from language code to text: card `title`, `contents
 
 ## Changelog
 
+### 0.5.0
+
+- Separate mobile view for screens up to 700px wide (`?view=mobile` / `?view=desktop` forces one for testing). The timeline runs top to bottom with cards at a fixed distance from each other; each date marking sits full-width above the first card that is not older than it.
+- A small date counter at the top left follows the scroll (interpolated between cards). The eons/eras are a narrow vertical strip on the right. Sources open in a popup.
+- No sidebar, no card adding or editing on mobile. The header scrolls away with the page and holds the language switcher.
+- Code: `App.jsx` only picks the view; the old app is now `DesktopView.jsx`, the new one `MobileView.jsx` (position/time maths in `mobileScale.js`). `Card` renders just the card; the desktop view adds the vertical-line wrapper.
+
 ### 0.4.1
 
 - The sources list on a card shows page titles instead of raw URLs (the URL is still the link target and tooltip).

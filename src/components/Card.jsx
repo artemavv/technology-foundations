@@ -1,10 +1,33 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLang } from '../i18n.jsx'
 import RichText from './RichText.jsx'
 import EditModal from './EditModal.jsx'
 
-export default function Card({ card, left, creds, onSaved, onDeleted }) {
+// The sources list; inline under the card (desktop) or in a popup (sourcesModal).
+function SourcesList({ sources, id }) {
+  const { t } = useLang()
+  return (
+    <section className="card-sources" id={id}>
+      <h3>{t('sources')}</h3>
+      <ol>
+        {sources.map((src) => {
+          const { url, title: label } = typeof src === 'string' ? { url: src } : src
+          return (
+            <li key={url}>
+              <a href={url} target="_blank" rel="noopener noreferrer" title={url}>
+                {label || url}
+              </a>
+            </li>
+          )
+        })}
+      </ol>
+    </section>
+  )
+}
+
+// Renders just the card; the view supplies the positioning wrapper.
+function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
   const { pick, has, def, languages, lang, wikiHref, t } = useLang()
   const title = pick(card.title)
   const defLabel = languages.find((l) => l.code === def)?.label ?? def
@@ -15,17 +38,19 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
   const [showIllustration, setShowIllustration] = useState(false)
   const sourcesId = `${anchor}-sources`
 
+  const popupOpen = showIllustration || (sourcesModal && showSources)
   useEffect(() => {
-    if (!showIllustration) return
-    const onKey = (e) => e.key === 'Escape' && setShowIllustration(false)
+    if (!popupOpen) return
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return
+      setShowIllustration(false)
+      setShowSources(false)
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [showIllustration])
+  }, [popupOpen])
 
-  // the column holds the card and its vertical line: solid beside the card,
-  // then fading out over the first half of the space below it
   return (
-    <div className="card-col" style={{ left }}>
     <article
       className={`card${card.status === 'pending' ? ' pending' : ''}`}
       id={anchor}
@@ -105,28 +130,34 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
           onClose={() => setEditing(false)}
         />
       )}
-      {showSources && sources.length > 0 && (
-        <section className="card-sources" id={sourcesId}>
-          <h3>{t('sources')}</h3>
-          <ol>
-            {sources.map((src) => {
-              const { url, title: label } = typeof src === 'string' ? { url: src } : src
-              return (
-              <li key={url}>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={url}
-                >
-                  {label || url}
-                </a>
-              </li>
-              )
-            })}
-          </ol>
-        </section>
+      {showSources && sources.length > 0 && !sourcesModal && (
+        <SourcesList sources={sources} id={sourcesId} />
       )}
+      {showSources &&
+        sources.length > 0 &&
+        sourcesModal &&
+        createPortal(
+          <div
+            className="modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('sourcesFor', title)}
+            onClick={() => setShowSources(false)}
+          >
+            <div className="sources-modal" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="sources-close"
+                aria-label={t('close')}
+                onClick={() => setShowSources(false)}
+              >
+                ×
+              </button>
+              <SourcesList sources={sources} id={sourcesId} />
+            </div>
+          </div>,
+          document.body,
+        )}
       {showIllustration &&
         createPortal(
           <div
@@ -153,7 +184,7 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
           document.body,
         )}
     </article>
-    <div className="card-tail" />
-    </div>
   )
 }
+
+export default memo(Card)

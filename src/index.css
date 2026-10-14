@@ -225,7 +225,7 @@ body,
 
 .card-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin-top: 10px;
 }
 
@@ -633,4 +633,137 @@ body,
   border-radius: 3px;
   font-size: 10px;
   color: #6b7280;
+}
+
+/* ---- sources popup (shared) ---- */
+.sources-modal {
+  position: relative;
+  width: min(420px, 100%);
+  min-height: 250px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: #fff;
+}
+.sources-modal .card-sources {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.sources-modal .card-sources h3 {
+  font-size: 13px;
+}
+.sources-modal .card-sources ol {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.sources-modal .card-sources li + li {
+  margin-top: 6px;
+}
+.sources-modal .card-sources a {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+.sources-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #55606e;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---- mobile view (max-width: 700px) ---- */
+.m-app {
+  --card-width: 300px;
+  --units-width: 24px;
+  min-height: 100%;
+  background: #f6f7f9;
+}
+.m-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 calc(var(--units-width) + 12px) 0 14px;
+}
+.m-header h1 {
+  margin: 0;
+  font-size: 18px;
+  color: #55606e;
+}
+.m-header .lang-switcher {
+  position: relative;
+  top: auto;
+  right: auto;
+}
+.m-header .lang-menu {
+  left: auto;
+  right: 0;
+}
+.m-counter {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 30;
+  padding: 3px 12px;
+  border-radius: 6px;
+  background: #dbeafe;
+  color: #1e4f8a;
+  font-size: 19.5px; /* 1.5x */
+  transition: background 0.2s;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+  pointer-events: none;
+}
+.m-list {
+  padding: 4px calc(var(--units-width) + 12px) 40px 14px;
+}
+.m-item {
+  width: min(var(--card-width), 100%);
+  margin: 0 auto 28px; /* fixed distance between cards */
+}
+.m-item .card {
+  margin-top: 0;
+  border-radius: 8px;
+  border-left-color: #d8dce2;
+}
+/* a date marking above its card, across the full width */
+.m-mark {
+  position: relative;
+  margin: 0 0 8px;
+  padding: 18px 0 2px;
+  font-size: 17px;
+  color: #55606e;
+  text-align: right;
+  background: linear-gradient(to left, #9aa3b0, rgba(154, 163, 176, 0)) top / 100% 1px no-repeat;
+}
+.m-units {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: var(--units-width);
+  overflow: hidden;
+  background: #eef1f5;
+}
+.m-unit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

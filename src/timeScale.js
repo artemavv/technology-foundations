@@ -22,7 +22,7 @@ export const MAX_GAP_RATIO = 0.3825 // max left-edge-to-left-edge distance, vs v
 // the span sets how large the desired gaps are versus the clamp bounds.
 const RAW_CANVAS = 11000
 
-const raw = (mya) => Math.pow(Math.max(mya, MIN_MYA), POWER)
+export const raw = (mya) => Math.pow(Math.max(mya, MIN_MYA), POWER)
 
 const RAW_MIN = raw(MIN_MYA)
 const RAW_MAX = raw(MAX_MYA)
