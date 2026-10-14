@@ -26,7 +26,10 @@
       "es": "Big_Bang"
     },
     "sources": [
-      "https://map.gsfc.nasa.gov/universe/bb_theory.html"
+      {
+        "url": "https://map.gsfc.nasa.gov/universe/bb_theory.html",
+        "title": "WMAP Overview - NASA Science"
+      }
     ]
   },
   {
@@ -56,6 +59,94 @@
     "photo": "earth.svg",
     "wikipedia": {
       "en": "History_of_Earth"
+    }
+  },
+  {
+    "id": "moon-forms",
+    "time": "4.51 Gya",
+    "mya": 4510,
+    "title": {
+      "en": "The Moon forms",
+      "ru": "Образуется Луна",
+      "it": "Si forma la Luna",
+      "de": "Der Mond entsteht",
+      "es": "Se forma la Luna"
+    },
+    "contents": {
+      "en": "A Mars-sized body, Theia, strikes the young Earth. The debris thrown into orbit gathers into the Moon within a few million years.\n\nThe Moon stabilizes the tilt of Earth's axis, which keeps the climate steady over long spans, and raises tides that later shape shorelines and coastal life.",
+      "ru": "Тело размером с Марс, Тейя, сталкивается с молодой Землёй. Выброшенные на орбиту обломки за несколько миллионов лет собираются в Луну.\n\nЛуна стабилизирует наклон земной оси, благодаря чему климат остаётся устойчивым в течение долгих эпох, и вызывает приливы, которые позже формируют береговые линии и прибрежную жизнь.",
+      "it": "Un corpo grande come Marte, Theia, colpisce la giovane Terra. I detriti scagliati in orbita si aggregano nella Luna nel giro di pochi milioni di anni.\n\nLa Luna stabilizza l'inclinazione dell'asse terrestre, mantenendo stabile il clima per lunghi periodi, e genera maree che in seguito modellano le coste e la vita costiera.",
+      "de": "Ein marsgroßer Körper, Theia, trifft die junge Erde. Die in die Umlaufbahn geschleuderten Trümmer verdichten sich innerhalb weniger Millionen Jahre zum Mond.\n\nDer Mond stabilisiert die Neigung der Erdachse und hält so das Klima über lange Zeiträume stabil; außerdem erzeugt er Gezeiten, die später Küsten und das Leben an ihnen prägen.",
+      "es": "Un cuerpo del tamaño de Marte, Tea, impacta contra la joven Tierra. Los restos lanzados a la órbita se agrupan en la Luna en pocos millones de años.\n\nLa Luna estabiliza la inclinación del eje terrestre, lo que mantiene el clima estable durante largos periodos, y genera mareas que más tarde moldean las costas y la vida costera."
+    },
+    "wikipedia": {
+      "en": "Giant-impact_hypothesis",
+      "ru": "Гипотеза_гигантского_столкновения",
+      "it": "Ipotesi_dell'impatto_gigante",
+      "de": "Giant-Impact-Hypothese",
+      "es": "Hipótesis_del_gran_impacto"
+    }
+  },
+  {
+    "id": "liquid-water",
+    "time": "4.4 Gya",
+    "mya": 4400,
+    "title": {
+      "en": "First liquid water",
+      "ru": "Первая жидкая вода",
+      "it": "La prima acqua liquida",
+      "de": "Das erste flüssige Wasser",
+      "es": "El primer agua líquida"
+    },
+    "contents": {
+      "en": "Tiny zircon crystals from Jack Hills in Western Australia, about 4.4 billion years old, carry oxygen isotope signatures of rock that interacted with liquid water. As the surface cools, steam condenses and rain fills the first oceans. The water came from the material that built the planet and probably from impacts of water-rich asteroids.\n\nLiquid water becomes the solvent for the chemistry that later gives rise to life.",
+      "ru": "Крошечные кристаллы циркона из Джек-Хиллс в Западной Австралии возрастом около 4,4 миллиарда лет несут изотопы кислорода, характерные для породы, взаимодействовавшей с жидкой водой. Поверхность остывает, пар конденсируется, и дожди наполняют первые океаны. Вода пришла из вещества, из которого строилась планета, и, вероятно, от ударов богатых водой астероидов.\n\nЖидкая вода становится растворителем для химии, из которой позже возникает жизнь.",
+      "it": "Minuscoli cristalli di zircone di Jack Hills, nell'Australia occidentale, vecchi circa 4,4 miliardi di anni, portano la firma isotopica dell'ossigeno di rocce che hanno interagito con acqua liquida. Mentre la superficie si raffredda, il vapore si condensa e la pioggia riempie i primi oceani. L'acqua proviene dal materiale che ha costruito il pianeta e probabilmente dagli impatti di asteroidi ricchi d'acqua.\n\nL'acqua liquida diventa il solvente della chimica da cui nascerà la vita.",
+      "de": "Winzige Zirkonkristalle aus den Jack Hills in Westaustralien, etwa 4,4 Milliarden Jahre alt, tragen Sauerstoffisotopen-Signaturen von Gestein, das mit flüssigem Wasser in Kontakt war. Während die Oberfläche abkühlt, kondensiert Dampf und Regen füllt die ersten Ozeane. Das Wasser stammt aus dem Material, aus dem der Planet entstand, und wohl auch aus Einschlägen wasserreicher Asteroiden.\n\nFlüssiges Wasser wird zum Lösungsmittel für die Chemie, aus der später das Leben hervorgeht.",
+      "es": "Diminutos cristales de circón de Jack Hills, en Australia Occidental, de unos 4400 millones de años, conservan la firma isotópica de oxígeno de rocas que interactuaron con agua líquida. Al enfriarse la superficie, el vapor se condensa y la lluvia llena los primeros océanos. El agua procede del material con que se formó el planeta y probablemente de impactos de asteroides ricos en agua.\n\nEl agua líquida se convierte en el disolvente de la química de la que más tarde surge la vida."
+    },
+    "wikipedia": {
+      "en": "Origin_of_water_on_Earth"
+    }
+  },
+  {
+    "id": "magnetic-field",
+    "time": "4.2 Gya",
+    "mya": 4200,
+    "title": {
+      "en": "Earth's magnetic field",
+      "ru": "Магнитное поле Земли",
+      "it": "Il campo magnetico terrestre",
+      "de": "Das Erdmagnetfeld",
+      "es": "El campo magnético terrestre"
+    },
+    "contents": {
+      "en": "Convection in Earth's liquid iron outer core starts a self-sustaining dynamo that wraps the planet in a magnetic field. Magnetized minerals in ancient zircon crystals suggest it was already running about 4.2 billion years ago; the evidence is firm by 3.5 billion years ago.\n\nThe field deflects the solar wind, the stream of charged particles from the Sun that would otherwise strip away the atmosphere and water. That protection keeps the surface habitable, and it later makes magnetic compasses possible.",
+      "ru": "Конвекция в жидком железном внешнем ядре Земли запускает самоподдерживающееся динамо, окутывающее планету магнитным полем. Намагниченные минералы в древних кристаллах циркона говорят о том, что оно действовало уже около 4,2 миллиарда лет назад; надёжные свидетельства относятся ко времени 3,5 миллиарда лет назад.\n\nПоле отклоняет солнечный ветер — поток заряженных частиц от Солнца, который иначе сдувал бы атмосферу и воду. Эта защита делает поверхность пригодной для жизни, а позже сделает возможными магнитные компасы.",
+      "it": "La convezione nel nucleo esterno di ferro liquido della Terra innesca una dinamo autosostenuta che avvolge il pianeta in un campo magnetico. I minerali magnetizzati negli antichi cristalli di zircone indicano che era già attiva circa 4,2 miliardi di anni fa; le prove sono solide da 3,5 miliardi di anni fa.\n\nIl campo devia il vento solare, il flusso di particelle cariche del Sole che altrimenti spazzerebbe via atmosfera e acqua. Questa protezione mantiene abitabile la superficie e, più tardi, renderà possibili le bussole magnetiche.",
+      "de": "Konvektion im flüssigen Eisenkern der Erde setzt einen selbsterhaltenden Dynamo in Gang, der den Planeten in ein Magnetfeld hüllt. Magnetisierte Minerale in uralten Zirkonkristallen deuten darauf hin, dass er schon vor etwa 4,2 Milliarden Jahren lief; gesichert ist er seit 3,5 Milliarden Jahren.\n\nDas Feld lenkt den Sonnenwind ab, den Strom geladener Teilchen von der Sonne, der sonst Atmosphäre und Wasser davontragen würde. Dieser Schutz hält die Oberfläche bewohnbar und macht später Magnetkompasse möglich.",
+      "es": "La convección en el núcleo externo de hierro líquido de la Tierra pone en marcha una dinamo autosostenida que envuelve el planeta en un campo magnético. Los minerales magnetizados en antiguos cristales de circón indican que ya funcionaba hace unos 4200 millones de años; las pruebas son firmes desde hace 3500 millones de años.\n\nEl campo desvía el viento solar, la corriente de partículas cargadas del Sol que de otro modo arrastraría la atmósfera y el agua. Esa protección mantiene habitable la superficie y, más tarde, hará posibles las brújulas magnéticas."
+    },
+    "wikipedia": {
+      "en": "Earth's_magnetic_field",
+      "ru": "Магнитное_поле_Земли",
+      "it": "Campo_magnetico_terrestre",
+      "de": "Erdmagnetfeld",
+      "es": "Campo_magnético_terrestre"
+    }
+  },
+  {
+    "id": "late-heavy-bombardment-ends",
+    "time": "3.85 Gya",
+    "mya": 3850,
+    "title": {
+      "en": "Late Heavy Bombardment ends"
+    },
+    "contents": {
+      "en": "The spike of asteroid and comet impacts that battered the Moon and the inner planets tapers off. Impacts that could sterilize the oceans become rare, so the young Earth finally has a stable surface where life can take hold.\n\nThe bombardment is inferred mainly from the ages of lunar impact basins, and how sharp the spike was is still debated."
+    },
+    "wikipedia": {
+      "en": "Late_Heavy_Bombardment"
     }
   },
   {
@@ -157,8 +248,14 @@
       "en": "Tiktaalik"
     },
     "sources": [
-      "https://www.nature.com/articles/nature04639",
-      "https://www.nature.com/articles/nature04637"
+      {
+        "url": "https://www.nature.com/articles/nature04639",
+        "title": "A Devonian tetrapod-like fish and the evolution of the tetrapod body plan | Nature"
+      },
+      {
+        "url": "https://www.nature.com/articles/nature04637",
+        "title": "The pectoral fin of Tiktaalik roseae and the origin of the tetrapod limb | Nature"
+      }
     ],
     "illustration": "tiktaalik.svg"
   },

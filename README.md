@@ -53,6 +53,12 @@ Translatable fields are maps from language code to text: card `title`, `contents
 
 ## Changelog
 
+### 0.4.1
+
+- The sources list on a card shows page titles instead of raw URLs (the URL is still the link target and tooltip).
+- In the edit form, enter sources one per line as `URL` or `URL (title)`. A line without a title gets the page's `<title>`, fetched by the server on submit (best effort: private/local addresses are not fetched, and the URL is shown if there is no title). Existing titles are shown as `URL (title)` and kept on edit; to refetch one, remove the parenthesised part.
+- Sources are stored as `{ "url", "title" }`; old plain-string entries still display.
+
 ### 0.4
 
 - Multilingual: English (default), Russian, Italian, German and Spanish. Card, block, category and unit text, plus the interface, follow the selected language, with fallback to English. Admins edit one language at a time.

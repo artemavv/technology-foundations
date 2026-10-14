@@ -16,7 +16,11 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
   const [title, setTitle] = useState(own(card.title))
   const [time, setTime] = useState(card.time)
   const [contents, setContents] = useState(own(card.contents))
-  const [sources, setSources] = useState((card.sources ?? []).join('\n'))
+  const [sources, setSources] = useState(
+    (card.sources ?? [])
+      .map((s) => (typeof s === 'string' ? s : s.title ? `${s.url} (${s.title})` : s.url))
+      .join('\n'),
+  )
   const [wikipedia, setWikipedia] = useState(wikipediaUrl(own(card.wikipedia), lang))
   const [pictures, setPictures] = useState({
     photo: card.photo ?? '',

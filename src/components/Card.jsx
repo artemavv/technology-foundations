@@ -109,7 +109,9 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
         <section className="card-sources" id={sourcesId}>
           <h3>{t('sources')}</h3>
           <ol>
-            {sources.map((url) => (
+            {sources.map((src) => {
+              const { url, title: label } = typeof src === 'string' ? { url: src } : src
+              return (
               <li key={url}>
                 <a
                   href={url}
@@ -117,10 +119,11 @@ export default function Card({ card, left, creds, onSaved, onDeleted }) {
                   rel="noopener noreferrer"
                   title={url}
                 >
-                  {url}
+                  {label || url}
                 </a>
               </li>
-            ))}
+              )
+            })}
           </ol>
         </section>
       )}

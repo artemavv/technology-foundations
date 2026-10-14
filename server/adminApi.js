@@ -7,6 +7,8 @@
 //   PUT  /api/pictures     admin: upload a JPEG/PNG/WebP (raw body); returns { name }
 //   POST /api/blocks       admin: add a sidebar block { title, time, category }; stored as { id, title, kya, category }
 //   DELETE /api/cards/:id  admin: delete a card and its pictures (if no other card uses them)
+// Sources are stored as { url, title? }; the title is typed as "URL (title)" or
+// fetched from the page when missing.
 // Translatable fields (title, contents, wikipedia on cards; title on blocks) are
 // per-language maps { <code>: text } with codes from public/data/languages.json
 // (the first is the default). Plain strings are rejected. On edit the sent
@@ -18,6 +20,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import { parseDate } from './parseDate.js'
+import { fetchTitle } from './pageTitle.js'
 
 const MAX_BODY = 64 * 1024
 const EDITABLE = ['time', 'mya', 'title', 'contents', 'sources', 'wikipedia', 'photo', 'illustration']
@@ -69,6 +72,14 @@ function langMap(v, name, langs) {
   return { value: out }
 }
 
+// A source line: "URL" or "URL (title)". Returns { url, title? }.
+function parseSource(line) {
+  const m = line.trim().match(/^(\S+)\s+\(([\s\S]*)\)$/)
+  const url = m ? m[1] : line.trim()
+  const title = m ? m[2].replace(/\s+/g, ' ').trim().slice(0, 200) : ''
+  return title ? { url, title } : { url }
+}
+
 // Returns { value } or { error }. Text maps may hold empty strings (= remove
 // that language); the caller checks the merged result.
 function validate(body, langs) {
@@ -86,9 +97,9 @@ function validate(body, langs) {
   if (!Array.isArray(body.sources) || !body.sources.every((s) => typeof s === 'string')) {
     return { error: 'Sources must be a list of URLs' }
   }
-  out.sources = body.sources.map((s) => s.trim()).filter(Boolean)
-  const bad = out.sources.find((s) => !isHttpUrl(s))
-  if (bad) return { error: `Not a valid http(s) URL: ${bad}` }
+  out.sources = body.sources.filter((s) => s.trim()).map(parseSource)
+  const bad = out.sources.find((s) => !isHttpUrl(s.url))
+  if (bad) return { error: `Not a valid http(s) URL: ${bad.url}` }
   const wiki = langMap(body.wikipedia, 'Wikipedia link', langs)
   if (wiki.error) return wiki
   out.wikipedia = wiki.value
@@ -273,6 +284,14 @@ export default function adminApi({ login, password }) {
       send(res, 400, { error })
       return null
     }
+    // sources sent without a title get the page's own title
+    value.sources = await Promise.all(
+      value.sources.map(async (s) => {
+        if (s.title) return s
+        const title = await fetchTitle(s.url)
+        return title ? { url: s.url, title } : s
+      }),
+    )
     return { value, def: langs[0], approve: body.approve === true }
   }
 

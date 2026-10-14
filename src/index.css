@@ -175,6 +175,8 @@ body,
 
 .card img {
   width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover; /* crop to fill, never stretch */
   border-radius: 6px;
   margin-bottom: 10px;
   display: block;
