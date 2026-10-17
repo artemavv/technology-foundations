@@ -245,6 +245,27 @@ body,
   text-decoration: none;
 }
 
+.card-thumb {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 40px;
+  height: 25px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: none;
+  cursor: pointer;
+}
+
+.card .card-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .card-icon:hover {
   background: #1f2937;
   border-color: #1f2937;
@@ -280,6 +301,30 @@ body,
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.src-icon {
+  display: inline-block;
+  margin-left: 4px;
+  width: 14px;
+  height: 14px;
+  line-height: 16px;
+  border-radius: 3px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  font-style: normal;
+  vertical-align: 1px;
+  color: #fff;
+  background: #6b7280;
+}
+.src-icon.wiki {
+  color: #111827;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #9ca3af;
+}
+.src-icon.yt {
+  background: #dc2626;
 }
 
 .modal-backdrop {

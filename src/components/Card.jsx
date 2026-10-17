@@ -4,6 +4,24 @@ import { useLang } from '../i18n.jsx'
 import RichText from './RichText.jsx'
 import EditModal from './EditModal.jsx'
 
+const SITES = [
+  { host: /(^|\.)wikipedia\.org$/i, word: 'Wikipedia', icon: 'W', cls: 'wiki' },
+  { host: /(^|\.)(youtube\.com|youtu\.be)$/i, word: 'YouTube', icon: 'Y', cls: 'yt' },
+]
+
+function siteOf(url) {
+  try {
+    const host = new URL(url).hostname
+    return SITES.find((s) => s.host.test(host))
+  } catch {
+    return undefined
+  }
+}
+
+// "Tiktaalik - Wikipedia" -> "Tiktaalik"
+const stripSite = (label, word) =>
+  label.replace(new RegExp(`\\s*[-–—|:·]?\\s*${word}\\s*$`, 'i'), '').trim() || label
+
 // The sources list; inline under the card (desktop) or in a popup (sourcesModal).
 function SourcesList({ sources, id }) {
   const { t } = useLang()
@@ -13,10 +31,17 @@ function SourcesList({ sources, id }) {
       <ol>
         {sources.map((src) => {
           const { url, title: label } = typeof src === 'string' ? { url: src } : src
+          const site = siteOf(url)
+          const text = label && site ? stripSite(label, site.word) : label
           return (
             <li key={url}>
               <a href={url} target="_blank" rel="noopener noreferrer" title={url}>
-                {label || url}
+                {text || url}
+                {site && (
+                  <span className={`src-icon ${site.cls}`} aria-label={site.word} title={site.word}>
+                    {site.icon}
+                  </span>
+                )}
               </a>
             </li>
           )
@@ -83,18 +108,6 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
             W
           </a>
         )}
-        {card.illustration && (
-          <button
-            type="button"
-            className="card-icon"
-            title={t('illustration')}
-            aria-label={t('illustrationFor', title)}
-            aria-haspopup="dialog"
-            onClick={() => setShowIllustration(true)}
-          >
-            I
-          </button>
-        )}
         {sources.length > 0 && (
           <button
             type="button"
@@ -121,6 +134,18 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
           </button>
         )}
       </div>
+      {card.illustration && (
+        <button
+          type="button"
+          className="card-thumb"
+          title={t('illustration')}
+          aria-label={t('illustrationFor', title)}
+          aria-haspopup="dialog"
+          onClick={() => setShowIllustration(true)}
+        >
+          <img src={`/pictures/${card.illustration}`} alt="" loading="lazy" />
+        </button>
+      )}
       {editing && (
         <EditModal
           card={card}
