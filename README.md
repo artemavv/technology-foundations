@@ -1,8 +1,17 @@
 # Technology Foundations
 
-A simple website showing a timeline of events that enabled modern technology, from the Big Bang to 2500 BC. Scroll horizontally through the timeline and read event cards.
+## About this project
 
-Built with React and Vite. Card and timeline content lives in `public/data/*.json`; card pictures are in `public/pictures/`. These two directories are git-ignored, so content edits stay out of the repository history. Sample content is kept in `seed/`; `npm run seed` (run automatically before `dev` and `build`) copies any missing files into `public/` without overwriting existing ones.
+Technology Foundations is a timeline page that tells the story of how modern technology became possible, starting from the Big Bang and ending around 2500 BC. It follows the chain of events that made everything else possible: the first atoms, the Earth, the first life, animals, the first humans and their tools, fire, farming and writing.
+
+You move along a timeline by scrolling, and each event is a small card with a short explanation, picture, and links to read more.
+
+The page is adapted to computer and phone screens, and it is available in English, Russian, Italian, German and Spanish.
+
+
+## Technical overview
+
+Built with React and Vite. Card and timeline content is placed in `public/data/*.json`; card pictures are in `public/pictures/`. 
 
 ## Development
 
@@ -12,16 +21,15 @@ npm run dev      # start the dev server
 npm run build    # production build
 ```
 
-## Content and the seed script
+## Sample content and the seed script
 
-Card content (`public/data/` and `public/pictures/`) is git-ignored, so edits to it never enter the repository history. A sample copy is tracked in `seed/` so a fresh clone still has something to show.
+Sample content is placed in `seed/` .
 
 `npm run seed` (`scripts/seed.js`) copies `seed/data` and `seed/pictures` into `public/`:
 
 - It only copies files that are missing in `public/`; existing files are never overwritten, so local edits are safe.
 - It runs automatically before `npm run dev` and `npm run build`.
 - To reset a file to its sample version, delete it from `public/` and run `npm run seed`.
-- New cards and pictures stay local. To make them part of the sample set, copy them into `seed/` yourself.
 
 ## Admin access
 
@@ -32,13 +40,9 @@ ADMIN_LOGIN=your-login
 ADMIN_PASSWORD=your-password
 ```
 
-Open the site with `?login=your-login&password=your-password` in the URL. If the server accepts them, every card gets an **E** icon that opens a form for the title, description, sources and Wikipedia link. Saving rewrites `public/data/cards.json`. With no credentials configured, the admin API is off.
+Open the site with `?login=your-login&password=your-password` in the URL. In Edim mode every card shows an **E** icon that opens edit form. Saving rewrites `public/data/cards.json`. With no credentials configured, the admin API is off.
 
 The API (`server/adminApi.js`) is a Vite plugin, so it runs under `npm run dev` and `npm run preview`. Credentials in a URL end up in browser history and server logs, so use this only on a trusted machine or network.
-
-## Sidebar blocks
-
-The right-hand sidebar reveals blocks from `public/data/blocks.json` (`id`, `title`, `kya` — thousands of years ago, e.g. `13800000` for 13.8 Gya — and `category`), oldest first. Block colors come from `public/data/cats.json` (`{ "<category>": { "label": "…", "color": "#rrggbb" } }`); edit that file to add or recolor categories. Admins get a **+** in the sidebar header to add blocks (title up to 40 characters, start date in the same formats as cards, and a category).
 
 ## Languages
 
@@ -53,24 +57,22 @@ Translatable fields are maps from language code to text: card `title`, `contents
 
 ## Changelog
 
+### 0.6.0
+
+- Minor polish and fixes 
+
 ### 0.5.0
 
-- Separate mobile view for screens up to 700px wide (`?view=mobile` / `?view=desktop` forces one for testing). The timeline runs top to bottom with cards at a fixed distance from each other; each date marking sits full-width above the first card that is not older than it.
-- A small date counter at the top left follows the scroll (interpolated between cards). The eons/eras are a narrow vertical strip on the right. Sources open in a popup.
-- No sidebar, no card adding or editing on mobile. The header scrolls away with the page and holds the language switcher.
-- Code: `App.jsx` only picks the view; the old app is now `DesktopView.jsx`, the new one `MobileView.jsx` (position/time maths in `mobileScale.js`). `Card` renders just the card; the desktop view adds the vertical-line wrapper.
+- Separate mobile view for screens up to 700px wide (`?view=mobile` / `?view=desktop` forces one for testing). The timeline runs top to bottom with cards at a fixed distance from each other.
 
 ### 0.4.1
 
 - The sources list on a card shows page titles instead of raw URLs (the URL is still the link target and tooltip).
-- In the edit form, enter sources one per line as `URL` or `URL (title)`. A line without a title gets the page's `<title>`, fetched by the server on submit (best effort: private/local addresses are not fetched, and the URL is shown if there is no title). Existing titles are shown as `URL (title)` and kept on edit; to refetch one, remove the parenthesised part.
-- Sources are stored as `{ "url", "title" }`; old plain-string entries still display.
+- In the edit form, enter sources one per line as `URL` or `URL (title)`. A line without a title gets the page's `<title>`, fetched by the server on submit.
 
 ### 0.4
 
-- Multilingual: English (default), Russian, Italian, German and Spanish. Card, block, category and unit text, plus the interface, follow the selected language, with fallback to English. Admins edit one language at a time.
-- The sidebar is now titled "Tech Factors" ("Технофакторы" in Russian). It sits below the timeline, which spans the full width.
-- Each card has a thin gray vertical line on its left, from the timeline bar down to the bottom panel; the cards' left corners are square.
+- Now it is multilingual: English (default), Russian, Italian, German and Spanish. 
 
 ### 0.3
 
@@ -80,7 +82,6 @@ Translatable fields are maps from language code to text: card `title`, `contents
 
 ### 0.2
 
-- Card descriptions show paragraphs (blank line = new paragraph) and markdown links `[text](https://…)`, which open in a new tab.
 - Admins can upload a card photo and illustration (JPEG, PNG or WebP, up to 2 MB each) in the edit form; visitors are told to paste image URLs into the description.
 - Admins can delete a card from the edit form; its pictures are removed too unless another card still uses them.
 - Add new cards: a **+** button for everyone opens the edit form. Admin cards are published at once; other visitors' cards are `pending` (orange, admin-only) until an admin clicks **Approve** in the edit form. Pending cards are stored in `data/pending.json` (git-ignored, never served to visitors), with a per-IP limit of 5 submissions per hour.

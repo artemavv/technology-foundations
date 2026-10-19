@@ -28,12 +28,25 @@ function interleave(cards) {
 const sameAnchors = (a, b) =>
   a.length === b.length && a.every((x, i) => x.mya === b[i].mya && x.pos === b[i].pos)
 
+// Units for the mobile rail: the eons as they are, then (Phanerozoic) the
+// smallest subdivision available, i.e. an epoch where there is one, else the period
+function railUnits(units) {
+  const fine = units.filter((u) => u.level && u.startMya <= 541)
+  return units
+    .filter((u) => (!u.level && u.endMya >= 541) || fine.includes(u))
+    .filter(
+      (u) =>
+        !u.level ||
+        !fine.some((v) => v.level > u.level && v.startMya <= u.startMya && v.endMya >= u.endMya),
+    )
+}
+
 // Vertical strip of the eons/eras on screen, aligned with the cards
 function UnitsRail({ units, anchors, scrollY, viewportHeight }) {
   const { pick } = useLang()
   return (
     <div className="m-units" aria-hidden="false">
-      {units.map((u) => {
+      {railUnits(units).map((u) => {
         const y1 = posAt(anchors, u.startMya)
         const y2 = posAt(anchors, u.endMya)
         if (y1 === null) return null
@@ -42,7 +55,7 @@ function UnitsRail({ units, anchors, scrollY, viewportHeight }) {
         const bottom = Math.min(y2 - scrollY, viewportHeight)
         if (bottom - top <= 0) return null
         return (
-          <span key={u.id} className="m-unit" style={{ background: u.color, top, height: bottom - top }}>
+          <span key={u.id} className="m-unit" style={{ background: u.color, color: textOn(u.color), top, height: bottom - top }}>
             {pick(u.label)}
           </span>
         )
@@ -123,7 +136,7 @@ export default function MobileView() {
   const items = interleave([...cards].sort((a, b) => b.mya - a.mya))
   const mya = myaAt(anchors, scrollY + viewportHeight * COUNTER_LINE)
   // the counter takes the color of the eon/era on screen; before the first one it stays light blue
-  const unit = mya === null ? null : units.find((u) => mya <= u.startMya && mya > u.endMya)
+  const unit = mya === null ? null : railUnits(units).find((u) => mya <= u.startMya && mya > u.endMya)
 
   return (
     <div className="m-app">

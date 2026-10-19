@@ -33,6 +33,20 @@
     ]
   },
   {
+    "id": "first-molecular-clouds",
+    "time": "13.7 Gya",
+    "mya": 13700,
+    "title": {
+      "en": "First molecular clouds form"
+    },
+    "contents": {
+      "en": "Within a few hundred million years of the Big Bang, gravity gathers primordial hydrogen and helium into dense clouds. Traces of molecular hydrogen let the gas radiate heat and cool, so it can collapse further and give birth to the first stars."
+    },
+    "wikipedia": {
+      "en": "Molecular_cloud"
+    }
+  },
+  {
     "id": "first-stars",
     "time": "13.6 Gya",
     "mya": 13600,
@@ -164,6 +178,20 @@
     }
   },
   {
+    "id": "first-cyanobacteria",
+    "time": "2.95 Gya",
+    "mya": 2950,
+    "title": {
+      "en": "First cyanobacteria"
+    },
+    "contents": {
+      "en": "Cyanobacteria are the first organisms thought to perform oxygenic photosynthesis: they split water to get electrons, and release oxygen as a byproduct. Their ancestors learned the trick from earlier anoxygenic photosynthesizers, and the exact date is debated; chemical traces in 2.95 Gya rocks (such as molybdenum isotopes) point to small \"oases\" of oxygen in the shallow oceans, long before the atmosphere changed.\n\nFor hundreds of millions of years the oxygen they made was absorbed by dissolved iron and other minerals, so it did not accumulate in the air. Only when these sinks were used up did the gas build up, causing the Great Oxidation Event.\n\nCyanobacteria also later became the chloroplasts of algae and plants through endosymbiosis, and they still produce a large part of the oxygen we breathe."
+    },
+    "wikipedia": {
+      "en": "Cyanobacteria"
+    }
+  },
+  {
     "id": "great-oxidation",
     "time": "2.4 Gya",
     "mya": 2400,
@@ -171,7 +199,7 @@
       "en": "Great Oxidation Event"
     },
     "contents": {
-      "en": "Cyanobacteria flood the atmosphere with oxygen. This toxic waste product for earlier life makes aerobic energy and complex cells possible."
+      "en": "Cyanobacteria, using photosynthesis, release oxygen as a waste byproduct. At first it is a poison: the anaerobic life that dominated the planet cannot tolerate it, and as oxygen builds up in the oceans and atmosphere, many such species die off. But life adapts. Aerobic respiration extracts far more energy from food than fermentation, producing around 15 times more ATP, the cell's universal energy currency. This efficient metabolism makes larger, more complex cells possible and paves the way for eukaryotes and, eventually, multicellular life."
     },
     "wikipedia": {
       "en": "Great_Oxidation_Event"
@@ -185,7 +213,7 @@
       "en": "Eukaryotes appear"
     },
     "contents": {
-      "en": "Cells with a nucleus emerge through endosymbiosis — mitochondria were once free-living bacteria. Complex cells are the basis of all multicellular life."
+      "en": "Cells with a nucleus emerge through endosymbiosis — mitochondria were once free-living bacteria. The nucleus encloses the cell's DNA in a membrane, protecting it and allowing genes to be regulated precisely, which lets cells grow larger and more specialized. Mitochondria, descended from oxygen-using bacteria engulfed by a host cell, act as power plants: they use oxygen to produce most of the cell's ATP. This surplus of energy pays for large genomes and complex structures. Complex cells are the basis of all multicellular life."
     },
     "wikipedia": {
       "en": "Eukaryote"
@@ -196,13 +224,13 @@
     "time": "600 Mya",
     "mya": 600,
     "title": {
-      "en": "Multicellular life diversifies"
+      "en": "Ediacaran biota"
     },
     "contents": {
-      "en": "Cooperation between cells allows larger, specialized organisms. Sponges and early animals appear in the oceans."
+      "en": "The first large, complex organisms appear in the oceans. Known from fossil impressions in rocks dated from about 635 to 539 Mya, the Ediacaran biota were soft-bodied, with no shells or bones: frond-like forms such as Charnia, quilted oval Dickinsonia, and tubular or disc-shaped creatures, some reaching more than a metre in length.\n\nMost seem to have lived fixed to or lying on the seafloor, absorbing food from the water, and show no clear mouths, guts or limbs. Whether they were early animals, fungi-like or lichen-like organisms or an entirely extinct lineage is still debated, though a few, like Kimberella, look like true animals.\n\nMost Ediacaran forms vanished near the end of the period, shortly before the Cambrian Explosion, which brought the first animals with hard parts."
     },
     "wikipedia": {
-      "en": "Multicellular_organism"
+      "en": "Ediacaran_biota"
     }
   },
   {
@@ -213,7 +241,7 @@
       "en": "Cambrian Explosion"
     },
     "contents": {
-      "en": "An enormous burst of animal diversity: the major body plans, eyes, and skeletons that define most modern animal groups evolve in tens of millions of years."
+      "en": "An enormous burst of animal diversity: the major body plans, eyes, and skeletons that define most modern animal groups evolve in tens of millions of years.\n\nAll of it happens in the sea. Among the best-known newcomers are trilobites, armoured arthropods that crawled the seafloor and were among the first animals with compound eyes; Anomalocaris, a metre-long predator with grasping appendages and a ring-shaped mouth; Opabinia, with five eyes and a clawed proboscis; and Hallucigenia, a spiny worm-like animal walking on stilt-like legs. Brachiopods and early molluscs grew the first shells, sponges and archaeocyathids built the first reefs, and Pikaia and Haikouichthys, small streamlined swimmers with a stiffening rod along the back, are among the earliest known relatives of the vertebrates."
     },
     "wikipedia": {
       "en": "Cambrian_explosion"
@@ -243,7 +271,6 @@
     "contents": {
       "en": "Tiktaalik is a transitional animal between a fish and a tetrapod. Its front fins show arm-like skeletal structures more akin to those of a crocodile, including a shoulder, elbow and wrist."
     },
-    "photo": "tiktaalik.svg",
     "wikipedia": {
       "en": "Tiktaalik"
     },
@@ -256,8 +283,7 @@
         "url": "https://www.nature.com/articles/nature04637",
         "title": "The pectoral fin of Tiktaalik roseae and the origin of the tetrapod limb | Nature"
       }
-    ],
-    "illustration": "tiktaalik.svg"
+    ]
   },
   {
     "id": "first-trees",
@@ -325,7 +351,6 @@
     "contents": {
       "en": "Flaked stone tools mark the dawn of deliberate technology — the first step on the long road to every machine we build."
     },
-    "photo": "stone-tools.svg",
     "wikipedia": {
       "en": "Oldowan"
     }

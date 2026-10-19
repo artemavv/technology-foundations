@@ -1,7 +1,7 @@
 :root {
   --card-width: 300px;
   --bar-height: 84px;
-  --units-height: 52px;
+  --units-height: 78px;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: #1f2937;
   background: #f6f7f9;
@@ -212,6 +212,67 @@ body,
   margin-bottom: 0;
 }
 
+.card.collapsed {
+  cursor: pointer;
+}
+.card.collapsed .card-contents p:not(:first-child) {
+  display: none;
+}
+.card.expanded {
+  display: flex;
+  flex-direction: column;
+}
+.card.expanded > * {
+  flex: none;
+}
+.card.expanded .card-contents {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: scroll; /* scrollbar always visible */
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #9aa3af #eef1f5;
+}
+.card.expanded .card-contents {
+  cursor: grab;
+}
+.card.expanded .card-contents.dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+@supports selector(::-webkit-scrollbar) {
+  .card.expanded .card-contents {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+  .card.expanded .card-contents::-webkit-scrollbar {
+    width: 8px;
+  }
+  .card.expanded .card-contents::-webkit-scrollbar-track {
+    background: #eef1f5;
+    border-radius: 4px;
+  }
+  .card.expanded .card-contents::-webkit-scrollbar-thumb {
+    background: #9aa3af;
+    border-radius: 4px;
+  }
+}
+.card-more {
+  display: block;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #2563eb;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.card-more:hover {
+  text-decoration: underline;
+}
+
 .card-contents a {
   color: #2563eb;
 }
@@ -246,9 +307,7 @@ body,
 }
 
 .card-thumb {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
+  margin-left: auto;
   width: 40px;
   height: 25px;
   padding: 0;
@@ -343,6 +402,7 @@ body,
   max-height: 100%;
   object-fit: contain;
   border-radius: 6px;
+  background: #fff;
 }
 
 .modal-close {
@@ -611,9 +671,10 @@ body,
   bottom: 0;
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  font-size: 13px;
-  color: #fff;
+  padding: 0 8px;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(255, 255, 255, 0.6);
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

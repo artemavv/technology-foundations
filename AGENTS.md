@@ -40,3 +40,7 @@ A simple website showing a timeline of events that enabled modern technology, fr
 ## To be planned
 
 - how to store card and timeline content; should be editable locally with a simple tool until an online card editor exists
+
+## Content editing
+
+- Always make new card content edits in `public/data/` (the live, git-ignored content), not in `seed/data/`. `seed/` only provides sample files that `npm run seed` copies into `public/` when they are missing; it never overwrites existing ones.

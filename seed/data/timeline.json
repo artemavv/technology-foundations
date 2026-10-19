@@ -10,7 +10,8 @@
     },
     "startMya": 4600,
     "endMya": 4000,
-    "color": "#e57373"
+    "color": "#e57373",
+    "rows": 3
   },
   {
     "id": "archean",
@@ -23,7 +24,8 @@
     },
     "startMya": 4000,
     "endMya": 2500,
-    "color": "#e67e22"
+    "color": "#e67e22",
+    "rows": 3
   },
   {
     "id": "proterozoic",
@@ -36,7 +38,8 @@
     },
     "startMya": 2500,
     "endMya": 541,
-    "color": "#f1c40f"
+    "color": "#f1c40f",
+    "rows": 3
   },
   {
     "id": "paleozoic",
@@ -89,5 +92,204 @@
     "startMya": 0.0117,
     "endMya": -0.0045,
     "color": "#7f8c8d"
+  },
+  {
+    "id": "cambrian",
+    "label": {
+      "en": "Cambrian"
+    },
+    "startMya": 541,
+    "endMya": 485.4,
+    "color": "#7fa056",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "ordovician",
+    "label": {
+      "en": "Ordovician"
+    },
+    "startMya": 485.4,
+    "endMya": 443.8,
+    "color": "#009270",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "silurian",
+    "label": {
+      "en": "Silurian"
+    },
+    "startMya": 443.8,
+    "endMya": 419.2,
+    "color": "#b3e1b6",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "devonian",
+    "label": {
+      "en": "Devonian"
+    },
+    "startMya": 419.2,
+    "endMya": 358.9,
+    "color": "#cb8c37",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "carboniferous",
+    "label": {
+      "en": "Carboniferous"
+    },
+    "startMya": 358.9,
+    "endMya": 298.9,
+    "color": "#67a599",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "permian",
+    "label": {
+      "en": "Permian"
+    },
+    "startMya": 298.9,
+    "endMya": 251.9,
+    "color": "#f04028",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "triassic",
+    "label": {
+      "en": "Triassic"
+    },
+    "startMya": 251.9,
+    "endMya": 201.4,
+    "color": "#812b92",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "jurassic",
+    "label": {
+      "en": "Jurassic"
+    },
+    "startMya": 201.4,
+    "endMya": 145,
+    "color": "#34b2c9",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "cretaceous",
+    "label": {
+      "en": "Cretaceous"
+    },
+    "startMya": 145,
+    "endMya": 66,
+    "color": "#7fc64e",
+    "level": 1,
+    "rows": 2
+  },
+  {
+    "id": "paleogene",
+    "label": {
+      "en": "Paleogene"
+    },
+    "startMya": 66,
+    "endMya": 23.03,
+    "color": "#fd9a52",
+    "level": 1
+  },
+  {
+    "id": "neogene",
+    "label": {
+      "en": "Neogene"
+    },
+    "startMya": 23.03,
+    "endMya": 2.58,
+    "color": "#ffe619",
+    "level": 1
+  },
+  {
+    "id": "quaternary",
+    "label": {
+      "en": "Quaternary"
+    },
+    "startMya": 2.58,
+    "endMya": 0.0117,
+    "color": "#f9f97f",
+    "level": 1
+  },
+  {
+    "id": "paleocene",
+    "label": {
+      "en": "Paleocene"
+    },
+    "startMya": 66,
+    "endMya": 56,
+    "color": "#fda75f",
+    "level": 2
+  },
+  {
+    "id": "eocene",
+    "label": {
+      "en": "Eocene"
+    },
+    "startMya": 56,
+    "endMya": 33.9,
+    "color": "#fdb46c",
+    "level": 2
+  },
+  {
+    "id": "oligocene",
+    "label": {
+      "en": "Oligocene"
+    },
+    "startMya": 33.9,
+    "endMya": 23.03,
+    "color": "#fdc07a",
+    "level": 2
+  },
+  {
+    "id": "miocene",
+    "label": {
+      "en": "Miocene"
+    },
+    "startMya": 23.03,
+    "endMya": 5.333,
+    "color": "#ffff00",
+    "level": 2
+  },
+  {
+    "id": "pliocene",
+    "label": {
+      "en": "Pliocene"
+    },
+    "startMya": 5.333,
+    "endMya": 2.58,
+    "color": "#ffff99",
+    "level": 2
+  },
+  {
+    "id": "pleistocene",
+    "label": {
+      "en": "Pleistocene"
+    },
+    "startMya": 2.58,
+    "endMya": 0.0117,
+    "color": "#ffefaf",
+    "level": 2
+  },
+  {
+    "id": "holocene-epoch",
+    "label": {
+      "en": "Holocene"
+    },
+    "startMya": 0.0117,
+    "endMya": -0.0045,
+    "color": "#fef2e0",
+    "level": 2
   }
 ]

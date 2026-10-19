@@ -1,4 +1,8 @@
 import { useLang } from '../i18n.jsx'
+import { textOn } from '../color.js'
+
+// units have an optional level: 0 eon/era (default), 1 period, 2 epoch; one row each unless `rows` says otherwise
+const ROW_HEIGHT = 26
 
 export default function UnitsBar({ units, scrollLeft, viewportWidth, mapTime }) {
   const { pick } = useLang()
@@ -20,8 +24,13 @@ export default function UnitsBar({ units, scrollLeft, viewportWidth, mapTime }) 
           className="unit-chip"
           style={{
             background: u.color,
-            left: u.x1 - scrollLeft,
-            width: u.x2 - u.x1,
+            color: textOn(u.color),
+            top: (u.level ?? 0) * ROW_HEIGHT,
+            bottom: 'auto',
+            height: (u.rows ?? 1) * ROW_HEIGHT,
+            // clip to the left screen edge so the title stays visible while the unit is on screen
+            left: Math.max(u.x1 - scrollLeft, 0),
+            width: u.x2 - Math.max(u.x1, scrollLeft),
           }}
         >
           {pick(u.label)}

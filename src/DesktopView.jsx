@@ -20,7 +20,10 @@ export default function DesktopView() {
   )
   const [blocks, setBlocks] = useState([])
   const [cats, setCats] = useState({})
+  // the Tech Units sidebar is hidden unless the page was loaded with ?tf=on
+  const sidebarEnabled = new URLSearchParams(window.location.search).get('tf') === 'on'
   const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (!sidebarEnabled) return false
     try {
       return localStorage.getItem('sidebar') !== 'closed'
     } catch {
@@ -206,7 +209,7 @@ export default function DesktopView() {
       />
       </div>
       <LangSwitcher />
-      {sidebarOpen ? (
+      {!sidebarEnabled ? null : sidebarOpen ? (
         <Sidebar
           blocks={blocks}
           cats={cats}
