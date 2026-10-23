@@ -44,6 +44,10 @@ Open the site with `?login=your-login&password=your-password` in the URL. In Edi
 
 The API (`server/adminApi.js`) is a Vite plugin, so it runs under `npm run dev` and `npm run preview`. Credentials in a URL end up in browser history and server logs, so use this only on a trusted machine or network.
 
+## Translation management page
+
+With the same `login` and `password` parameters, open `/translations.html` (e.g. `http://localhost:5173/translations.html?login=…&password=…`). It lists all published cards, oldest first, in two columns: a source language and a translation language, chosen in the dropdowns at the top (picking the language already chosen in the other dropdown swaps them). **Edit** under a row turns it into two side-by-side forms with a single **Save**. Title, description and Wikipedia link are edited per language; the date, sources and pictures are shared by all languages, so they are editable in the source form only. Pending cards are not listed. Each non-default language of a card has a translation status, **Completed** or **Pending**, set in its form; pending translations are shown with a light yellow background. English (the default language) is always completed. It is stored as `"langStatus": { "ru": "pending" }` on the card; a language without an entry is completed, so existing data needs no change, and a language with no text has no status. The status only marks the work for admins; the public site shows pending translations like any other. Like the rest of the admin API, it works under `npm run dev` and `npm run preview`.
+
 ## Languages
 
 `public/data/languages.json` lists the languages (`[{ "code": "en", "label": "English" }, …]`); the first is the default and the fallback. The seed ships English (default), Russian, Italian, German and Spanish. To add one, append an entry and add a block for its code in `src/strings.js` (interface text; English is used for missing keys).
@@ -56,6 +60,10 @@ Translatable fields are maps from language code to text: card `title`, `contents
 - Visitor-submitted cards are stored in the language the visitor was viewing.
 
 ## Changelog
+
+### Unreleased
+
+- Translation management page for admins (`/translations.html`): all cards side by side in two languages, edited together.
 
 ### 0.6.0
 

@@ -2,6 +2,7 @@ import { useLang } from '../i18n.jsx'
 import { textOn } from '../color.js'
 
 // units have an optional level: 0 eon/era (default), 1 period, 2 epoch; one row each unless `rows` says otherwise
+// (units spanning 3 rows, i.e. the Precambrian eons, get larger type)
 const ROW_HEIGHT = 26
 
 export default function UnitsBar({ units, scrollLeft, viewportWidth, mapTime }) {
@@ -21,7 +22,7 @@ export default function UnitsBar({ units, scrollLeft, viewportWidth, mapTime }) 
       {visible.map((u) => (
         <span
           key={u.id}
-          className="unit-chip"
+          className={`unit-chip${(u.rows ?? 1) >= 3 ? ' unit-chip-eon' : ''}`}
           style={{
             background: u.color,
             color: textOn(u.color),

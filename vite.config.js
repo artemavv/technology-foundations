@@ -10,5 +10,10 @@ export default defineConfig(({ mode }) => {
       react(),
       adminApi({ login: env.ADMIN_LOGIN, password: env.ADMIN_PASSWORD }),
     ],
+    build: {
+      rollupOptions: {
+        input: { main: 'index.html', translations: 'translations.html' },
+      },
+    },
   }
 })

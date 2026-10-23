@@ -68,4 +68,10 @@ export async function fetchPending(creds) {
   return r.ok ? r.json() : []
 }
 
-export const createBlock = (creds, fields) => send('POST', '/api/blocks', creds, fields)
+// A card's sources as the edit-form text: one "URL" or "URL (title)" per line.
+export const sourcesToText = (sources) =>
+  (sources ?? [])
+    .map((s) => (typeof s === 'string' ? s : s.title ? `${s.url} (${s.title})` : s.url))
+    .join('\n')
+
+export const createBlock =(creds, fields) => send('POST', '/api/blocks', creds, fields)

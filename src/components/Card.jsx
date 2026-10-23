@@ -51,6 +51,35 @@ function SourcesList({ sources, id }) {
   )
 }
 
+// Card photos are often cropped copies ("name-16x9.webp", "name-cropped.webp");
+// the popup tries the uncropped original first and falls back to the card's own file.
+const fullSize = (photo) => photo.replace(/-(16x9|cropped)(\.\w+)$/, '$2')
+
+// Full-size picture popup; `files` are tried in order until one loads.
+function ZoomModal({ files, alt, onClose }) {
+  const { t } = useLang()
+  const [i, setI] = useState(0)
+  // React events bubble through the portal to the card, which would expand it
+  const close = (e) => {
+    e.stopPropagation()
+    onClose()
+  }
+  return createPortal(
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={alt} onClick={close}>
+      <button type="button" className="modal-close" aria-label={t('close')} onClick={close}>
+        ×
+      </button>
+      <img
+        src={`/pictures/${files[i]}`}
+        alt={alt}
+        onClick={close}
+        onError={() => setI((n) => (n + 1 < files.length ? n + 1 : n))}
+      />
+    </div>,
+    document.body,
+  )
+}
+
 // Renders just the card; the view supplies the positioning wrapper.
 function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
   const { pick, has, def, languages, lang, wikiHref, t } = useLang()
@@ -61,6 +90,7 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
   const sources = card.sources ?? []
   const [editing, setEditing] = useState(false)
   const [showIllustration, setShowIllustration] = useState(false)
+  const [showPhoto, setShowPhoto] = useState(false)
   const sourcesId = `${anchor}-sources`
 
   const articleRef = useRef(null)
@@ -156,16 +186,35 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
     }
   }, [scrolling, contents])
 
+  // Expanded desktop card: while more text lies below the visible part, the last
+  // visible line fades out (CSS .more-below) to hint that the text continues.
+  useEffect(() => {
+    const el = scrolling && articleRef.current?.querySelector('.card-contents')
+    if (!el) return
+    const update = () =>
+      el.classList.toggle('more-below', el.scrollHeight - el.scrollTop - el.clientHeight > 4)
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      observer.disconnect()
+      el.classList.remove('more-below')
+    }
+  }, [scrolling, contents])
+
   const expand = (e) => {
     if (collapsed && !e.target.closest('a, button')) setExpanded(true)
   }
 
-  const popupOpen = showIllustration || (sourcesModal && showSources)
+  const popupOpen = showIllustration || showPhoto || (sourcesModal && showSources)
   useEffect(() => {
     if (!popupOpen) return
     const onKey = (e) => {
       if (e.key !== 'Escape') return
       setShowIllustration(false)
+      setShowPhoto(false)
       setShowSources(false)
     }
     window.addEventListener('keydown', onKey)
@@ -181,7 +230,15 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
       onClick={expand}
     >
       {card.photo && (
-        <img src={`/pictures/${card.photo}`} alt="" loading="lazy" onLoad={measure} />
+        <button
+          type="button"
+          className="card-photo"
+          aria-label={t('enlargePhoto', title)}
+          aria-haspopup="dialog"
+          onClick={() => setShowPhoto(true)}
+        >
+          <img src={`/pictures/${card.photo}`} alt="" loading="lazy" onLoad={measure} />
+        </button>
       )}
       <div className="card-time">
         {card.time}
@@ -292,31 +349,16 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
           </div>,
           document.body,
         )}
-      {showIllustration &&
-        createPortal(
-          <div
-            className="modal-backdrop"
-            role="dialog"
-            aria-modal="true"
-            aria-label={title}
-            onClick={() => setShowIllustration(false)}
-          >
-            <button
-              type="button"
-              className="modal-close"
-              aria-label={t('close')}
-              onClick={() => setShowIllustration(false)}
-            >
-              ×
-            </button>
-            <img
-              src={`/pictures/${card.illustration}`}
-              alt={title}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>,
-          document.body,
-        )}
+      {showIllustration && (
+        <ZoomModal files={[card.illustration]} alt={title} onClose={() => setShowIllustration(false)} />
+      )}
+      {showPhoto && (
+        <ZoomModal
+          files={[...new Set([fullSize(card.photo), card.photo])]}
+          alt={title}
+          onClose={() => setShowPhoto(false)}
+        />
+      )}
     </article>
   )
 }

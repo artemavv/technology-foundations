@@ -13,6 +13,9 @@
 // per-language maps { <code>: text } with codes from public/data/languages.json
 // (the first is the default). Plain strings are rejected. On edit the sent
 // languages are merged into the stored map; an empty text removes that language.
+// Cards may carry `langStatus: { <code>: 'pending' }` for translations awaiting
+// review. A language without an entry is completed, and the default language is
+// always completed. Sent as { <code>: 'completed' | 'pending' } and merged on edit.
 // Credentials come from ADMIN_LOGIN / ADMIN_PASSWORD (e.g. in .env.local) and are
 // sent by the page in the X-Admin-Login / X-Admin-Password headers. If either
 // variable is unset, the admin API is disabled.
@@ -25,7 +28,8 @@ import { fetchTitle } from './pageTitle.js'
 const MAX_BODY = 64 * 1024
 const EDITABLE = ['time', 'mya', 'title', 'contents', 'sources', 'wikipedia', 'photo', 'illustration']
 const TEXT_FIELDS = ['title', 'contents', 'wikipedia'] // per-language maps
-const MAX_PICTURE = 2 * 1024 * 1024
+const STATUSES = ['completed', 'pending'] // translation status; stored only when 'pending'
+const MAX_PICTURE =2 * 1024 * 1024
 const PICTURE_NAME = /^[\w-][\w.-]*\.(jpg|png|webp|svg)$/i
 const MAX_TITLE = 40
 const MAX_PENDING = 200
@@ -105,6 +109,17 @@ function validate(body, langs) {
   out.wikipedia = wiki.value
   if (Object.values(out.wikipedia).some((w) => w && !isWikipedia(w))) {
     return { error: 'Wikipedia link must be a wikipedia.org URL' }
+  }
+  if (body.langStatus !== undefined) {
+    const s = body.langStatus
+    if (!s || typeof s !== 'object' || Array.isArray(s)) {
+      return { error: 'Translation status must be a map of language code to status' }
+    }
+    for (const [code, status] of Object.entries(s)) {
+      if (!langs.includes(code)) return { error: `Unknown language: ${code}` }
+      if (!STATUSES.includes(status)) return { error: `Invalid translation status: ${status}` }
+    }
+    out.langStatus = s
   }
   for (const key of ['photo', 'illustration']) {
     const v = body[key]
@@ -195,6 +210,23 @@ function applyFields(card, value, def) {
       if (key === 'wikipedia' && Object.keys(card[key]).length === 0) delete card[key]
     } else if (['sources', 'photo', 'illustration'].includes(key) && v.length === 0) delete card[key]
     else card[key] = v
+  }
+  if (value.langStatus) {
+    // only non-default languages can be pending; 'completed' is the absence of an entry
+    const status = { ...card.langStatus }
+    for (const [code, s] of Object.entries(value.langStatus)) {
+      if (s === 'pending' && code !== def) status[code] = s
+      else delete status[code]
+    }
+    card.langStatus = status
+  }
+  if (card.langStatus) {
+    // a language without any text has nothing to review
+    const hasText = (field, code) => typeof field === 'object' && Boolean(field?.[code])
+    for (const code of Object.keys(card.langStatus)) {
+      if (!hasText(card.title, code) && !hasText(card.contents, code)) delete card.langStatus[code]
+    }
+    if (Object.keys(card.langStatus).length === 0) delete card.langStatus
   }
   if (Object.keys(card.title ?? {}).length === 0) return 'Title is required'
   if (Object.keys(card.contents ?? {}).length === 0) return 'Description is required'

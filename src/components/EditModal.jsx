@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { createCard, deleteCard, saveCard, uploadPicture } from '../admin.js'
+import { createCard, deleteCard, saveCard, sourcesToText } from '../admin.js'
 import { useLang, wikipediaUrl } from '../i18n.jsx'
+import PictureField from './PictureField.jsx'
 
 const NEW_CARD = { title: {}, time: '', contents: {}, sources: [], wikipedia: {} }
 
@@ -16,11 +17,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
   const [title, setTitle] = useState(own(card.title))
   const [time, setTime] = useState(card.time)
   const [contents, setContents] = useState(own(card.contents))
-  const [sources, setSources] = useState(
-    (card.sources ?? [])
-      .map((s) => (typeof s === 'string' ? s : s.title ? `${s.url} (${s.title})` : s.url))
-      .join('\n'),
-  )
+  const [sources, setSources] = useState(sourcesToText(card.sources))
   const [wikipedia, setWikipedia] = useState(wikipediaUrl(own(card.wikipedia), lang))
   const [pictures, setPictures] = useState({
     photo: card.photo ?? '',
@@ -84,21 +81,6 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
       </div>,
       document.body,
     )
-  }
-
-  const pickPicture = (key) => async (e) => {
-    const file = e.target.files[0]
-    e.target.value = ''
-    if (!file) return
-    setSaving(true)
-    setError('')
-    try {
-      const name = await uploadPicture(creds, file)
-      setPictures((p) => ({ ...p, [key]: name }))
-    } catch (err) {
-      setError(err.message)
-    }
-    setSaving(false)
   }
 
   const remove = async () => {
@@ -179,33 +161,17 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
               ['photo', t('photo'), t('photoHint')],
               ['illustration', t('illustration'), t('illustrationHint')],
             ].map(([key, label, hint]) => (
-              <div className="edit-photo" key={key}>
-                {label}
-                {pictures[key] && <img src={`/pictures/${pictures[key]}`} alt="" />}
-                <div className="edit-photo-buttons">
-                  <label className="file-button">
-                    {pictures[key] ? t('replace') : t('upload')}
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={pickPicture(key)}
-                      disabled={saving}
-                    />
-                  </label>
-                  {pictures[key] && (
-                    <button
-                      type="button"
-                      onClick={() => setPictures((p) => ({ ...p, [key]: '' }))}
-                      disabled={saving}
-                    >
-                      {t('remove')}
-                    </button>
-                  )}
-                </div>
-                <span className="edit-hint">
-                  {hint} {t('pictureLimits')}
-                </span>
-              </div>
+              <PictureField
+                key={key}
+                label={label}
+                hint={hint}
+                value={pictures[key]}
+                onChange={(name) => setPictures((p) => ({ ...p, [key]: name }))}
+                creds={creds}
+                disabled={saving}
+                onBusy={setSaving}
+                onError={setError}
+              />
             ))}
           </>
         ) : (
