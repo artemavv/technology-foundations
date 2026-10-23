@@ -44,10 +44,11 @@ export function xToMya(x) {
 // Lay out cards (oldest first, i.e. descending mya) into static x positions.
 // Returns { xs, contentWidth, mapTime, mapX, startCardX, endCardX } where
 // mapTime(mya) -> x interpolates any point in time from the card anchors.
-// `special` says which special cards exist: { start, end }. The start one sits
-// before the first card (so the oldest tick follows it); the end one sits after
-// the last card, and the end of the timeline (2500 BC) follows it. startCardX
-// and endCardX are their left edges, or null.
+// `special` says which special cards exist: { start, end, startIndex }. The start
+// one sits before the card at index `startIndex` (default 0, the first card) at
+// the minimum distance from the card before it; the end one sits after the last
+// card, and the end of the timeline (2500 BC) follows it. startCardX and
+// endCardX are their left edges, or null.
 export function layoutTimeline(sortedMya, viewportWidth, special = {}) {
   if (sortedMya.length === 0) {
     return {
@@ -64,9 +65,17 @@ export function layoutTimeline(sortedMya, viewportWidth, special = {}) {
   const maxDelta = Math.max(minDelta, MAX_GAP_RATIO * viewportWidth)
 
   const rawXs = sortedMya.map(timeToX)
-  const startCardX = special.start ? START_X : null
-  const xs = [special.start ? START_X + SCARD_WIDTH + MIN_CLEAR_GAP : START_X]
+  const startAt = Math.min(Math.max(special.startIndex ?? 0, 0), sortedMya.length - 1)
+  const withStart = (i) => Boolean(special.start) && i === startAt
+  let startCardX = withStart(0) ? START_X : null
+  const xs = [withStart(0) ? START_X + SCARD_WIDTH + MIN_CLEAR_GAP : START_X]
   for (let i = 1; i < rawXs.length; i++) {
+    if (withStart(i)) {
+      // the start card takes the place after the previous card, and this card follows it
+      startCardX = xs[i - 1] + minDelta
+      xs.push(startCardX + SCARD_WIDTH + MIN_CLEAR_GAP)
+      continue
+    }
     const desired = rawXs[i] - rawXs[i - 1]
     const delta = Math.min(Math.max(desired, minDelta), maxDelta)
     xs.push(xs[i - 1] + delta)

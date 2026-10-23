@@ -11,10 +11,11 @@ import EditModal from './components/EditModal.jsx'
 import { adminCredentials, fetchPending, verifyAdmin } from './admin.js'
 import { formatAge } from './format.js'
 import { anchorTarget } from './anchors.js'
-import { loadSpecialCards } from './specialCards.js'
+import { loadSpecialCards, startIndex } from './specialCards.js'
 import { CARD_WIDTH, END_MYA, SCARD_WIDTH, START_X, layoutTimeline } from './timeScale.js'
 
 const NAV_JUMP_X = 100 // where the menu puts the card, from the left of the stage
+const OPENING_X = 200 // where a page opened without an anchor puts the opening card: the card before it shows a little
 
 export default function DesktopView() {
   const { t } = useLang()
@@ -122,13 +123,14 @@ export default function DesktopView() {
     }
   }
 
-  // Open at the card named by the URL (#card-<id>): the browser can't do it, as
-  // the cards are drawn after the data loads and sit in a scroller of their own.
-  // The layout depends on the stage width, so wait until it is measured.
+  // Open at the card named by the URL (#card-<id>), or at the opening card without
+  // one: the browser can't do it, as the cards are drawn after the data loads and
+  // sit in a scroller of their own. The layout depends on the stage width, so wait
+  // until it is measured.
   useEffect(() => {
     if (!cards || !measured || jumpedRef.current) return
     jumpedRef.current = true
-    jumpRef.current?.(false)
+    jumpRef.current?.(false, true)
   }, [cards, measured])
 
   // later changes of the anchor (back/forward, a pasted link) scroll there too
@@ -166,7 +168,7 @@ export default function DesktopView() {
   const { xs, contentWidth, mapTime, mapX, startCardX, endCardX } = layoutTimeline(
     sorted.map((c) => c.mya),
     viewportWidth,
-    { start: Boolean(scards.start), end: Boolean(scards.end) },
+    { start: Boolean(scards.start), end: Boolean(scards.end), startIndex: startIndex(scards.start, sorted) },
   )
   // age under the cursor line; kept after the mouse leaves the stage so the
   // sidebar doesn't reset when the user moves over to it
@@ -176,9 +178,10 @@ export default function DesktopView() {
   // Scroll the card named by the URL's anchor to the left of the stage. With
   // `onlyIfHidden` a card that is already fully on screen stays put (clicking a
   // card's own title changes the anchor too).
-  jumpRef.current = (onlyIfHidden) => {
+  jumpRef.current = (onlyIfHidden, orStart = false) => {
     const el = scrollRef.current
-    const target = anchorTarget()
+    const anchored = anchorTarget()
+    const target = anchored ?? (orStart ? { special: true, key: 'start' } : null)
     if (!el || !target) return
     const x = target.special
       ? { start: startCardX, end: endCardX }[target.key]
@@ -186,7 +189,7 @@ export default function DesktopView() {
     if (x === undefined || x === null) return
     const width = target.special ? SCARD_WIDTH : CARD_WIDTH
     if (onlyIfHidden && x >= el.scrollLeft && x + width <= el.scrollLeft + el.clientWidth) return
-    el.scrollLeft = Math.max(0, x - START_X)
+    el.scrollLeft = Math.max(0, x - (anchored ? START_X : OPENING_X))
   }
 
   // the menu's jump: the card goes to the left of the stage, even if it is already on

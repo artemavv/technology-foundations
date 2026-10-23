@@ -60,18 +60,18 @@ Proposals made before this page existed have no submission time and are listed l
 
 ## Special cards
 
-Two special cards frame the timeline: the **opening card** (`start`) stands before the first card, and the **closing card** (`end`) after the last one. They have only a title and a description: no date, Wikipedia link, sources or pictures. They are wider than ordinary cards and have a bigger header; on a phone they use the full width of the list.
+Two special cards frame the timeline: the **opening card** (`start`) stands before the card named by its `before` (see below), and the **closing card** (`end`) after the last one. A freshly opened page, with no `#anchor` in the URL, scrolls to the opening card (on desktop a little in from the left edge, so the end of the previous card shows), and the visitor can scroll on in both directions. They have only a title and a description: no date, Wikipedia link, sources or pictures. They are wider than ordinary cards and have a bigger header; on a phone they use the full width of the list.
 
 They live in `public/data/scards.json` (sample in `seed/data/`), with the same per-language maps as cards:
 
 ```json
 {
-  "start": { "title": { "en": "…", "ru": "…" }, "contents": { "en": "…", "ru": "…" } },
+  "start": { "before": "control-of-fire", "title": { "en": "…", "ru": "…" }, "contents": { "en": "…", "ru": "…" } },
   "end": { "title": { "en": "…" }, "contents": { "en": "…" } }
 }
 ```
 
-A missing file, or a card without any text, simply leaves that card out. On the timeline bar the oldest tick (13.8 Gya) follows the opening card, and the newest one (2500 BC) follows the closing card. The special cards are edited on the translations page, which has a separate row for each (before the first and after the last card) with a form for the title and description only. Behind it is `PUT /api/scards/start` or `/api/scards/end` (admin only).
+A missing file, or a card without any text, simply leaves that card out. `before` is optional: the id of the card the opening card goes before (here the 1 Mya card, so it also comes before that card's date marking on phones); without it, or if no such card exists, the opening card is the very first item. The oldest tick (13.8 Gya) then sits on the first card, and the newest one (2500 BC) follows the closing card. The special cards are edited on the translations page, which has a separate row for each (the opening one before the card it goes before, the closing one after the last card); saving there keeps `before` with a form for the title and description only. Behind it is `PUT /api/scards/start` or `/api/scards/end` (admin only).
 
 ## Languages
 
@@ -94,7 +94,7 @@ Translatable fields are maps from language code to text: card `title`, `contents
 - Time navigation on desktop: a clock button in the top left corner (opposite the language switcher) opens a menu down the left edge with the same list as on phones, from the same `public/data/nav.json`. Picking an item scrolls that card to the left of the timeline and closes the menu; so do Escape and a click outside it. Without `nav.json` there is no button. On desktop and phones alike, the entry for the part of the timeline on screen is highlighted in the list (the last one whose card has been reached; on phones, judged at the date counter's line).
 - Linking to a card: opening a URL with a card anchor, e.g. `/#card-first-possible-fire` (or `#scard-start` / `#scard-end` for the special cards), scrolls to that card, on both desktop and phones; changing the anchor later does the same. On desktop the card goes to the left of the stage, and a card that is already fully visible stays put, so clicking a card's own title does not move the view.
 - Proposals page for admins (`/proposals.html`): review the cards proposed by visitors, with approve, edit and reject. New proposals are stored with a submission time.
-- Two special cards (title and text only) before the first and after the last card, wider and with bigger headers, edited on the translations page; the 13.8 Gya and 2500 BC ticks sit just outside them.
+- Two special cards (title and text only), wider and with bigger headers, edited on the translations page: the opening card before the "Control of fire" card (position set by `before` in `scards.json`) and the closing card after the last card. The page opens scrolled to the opening card; the 2500 BC tick sits just outside the closing card.
 
 ### 0.6.0
 

@@ -17,19 +17,21 @@ const MIN_MYA_SHOWN = 0.0045 // the timeline ends at 2500 BC
 const NAV_OFFSET = 56 // px left above a card jumped to, clear of the date counter
 
 // Cards oldest first with the date markings in between: each marking goes
-// above the first card that is not older than it. The special cards are the
-// first and last items, so the oldest marking follows the start card and the
-// last one (2500 BC) follows the end card.
+// above the first card that is not older than it. The start card goes before
+// the card named by its `before` (and before that card's marking), else at the
+// very beginning; the end card is the last item, and the last marking (2500 BC)
+// follows it.
 function interleave(cards, scards) {
   const items = []
   const marks = [...MARKINGS]
-  if (scards.start) items.push({ scard: { which: 'start', card: scards.start } })
-  for (const card of cards) {
+  const startAt = scards.start ? Math.max(0, cards.findIndex((c) => c.id === scards.start.before)) : -1
+  cards.forEach((card, i) => {
+    if (i === startAt) items.push({ scard: { which: 'start', card: scards.start } })
     while (marks.length && marks[0].mya >= card.mya) {
       items.push({ mark: marks.shift() })
     }
     items.push({ card })
-  }
+  })
   if (scards.end) items.push({ scard: { which: 'end', card: scards.end } })
   return [...items, ...marks.map((mark) => ({ mark }))]
 }
@@ -163,12 +165,13 @@ export default function MobileView() {
     return () => observer.disconnect()
   }, [cards])
 
-  // Open at the card named by the URL (#card-<id>): the browser can't do it, as
-  // the cards are drawn after the data loads. Later anchor changes scroll there too.
+  // Open at the card named by the URL (#card-<id>), or at the opening card without one:
+  // the browser can't do it, as the cards are drawn after the data loads. Later anchor
+  // changes scroll there too.
   useLayoutEffect(() => {
     if (!cards || jumpedRef.current) return
     jumpedRef.current = true
-    jumpRef.current?.()
+    jumpRef.current?.(true) // without an anchor: the opening card
   }, [cards])
 
   useEffect(() => {
@@ -189,8 +192,8 @@ export default function MobileView() {
     })
   }
   const goTo = (id) => scrollToAnchor(`card-${id}`, true)
-  jumpRef.current = () => {
-    const target = anchorTarget()
+  jumpRef.current = (orStart = false) => {
+    const target = anchorTarget() ?? (orStart ? { elementId: 'scard-start' } : null)
     if (target) scrollToAnchor(target.elementId, false)
   }
 

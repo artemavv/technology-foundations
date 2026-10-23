@@ -77,7 +77,7 @@ export const STRINGS = {
     proposalRejected: (title) => `Rejected: "${title}".`,
     noDefaultText: (lang) =>
       `There is no ${lang} text yet, so ${lang} readers see this card empty. Use Edit to add it.`,
-    specialStart: 'Opening card (before the first card)',
+    specialStart: 'Opening card',
     specialEnd: 'Closing card (after the last card)',
   },
   ru: {

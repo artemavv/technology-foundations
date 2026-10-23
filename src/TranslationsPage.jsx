@@ -3,7 +3,7 @@
 // together. Date, sources and pictures are shared by all languages, so only the
 // source form edits them. The two special cards (title and description only)
 // have their own rows, with their own forms, before the first and after the last card.
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { adminCredentials, saveCard, saveSpecialCard, sourcesToText, verifyAdmin } from './admin.js'
 import PictureField from './components/PictureField.jsx'
 import RichText from './components/RichText.jsx'
@@ -345,7 +345,7 @@ function SpecialRowEditor({ which, card, src, tr, def, creds, onSaved, onClose }
   )
 }
 
-// A special card's row: `which` is 'start' (before the first card) or 'end' (after the last).
+// A special card's row: `which` is 'start' (the opening card) or 'end' (after the last card).
 function SpecialRow({ which, card, src, tr, def, creds, onSaved }) {
   const { t } = useLang()
   const [editing, setEditing] = useState(false)
@@ -494,6 +494,9 @@ export default function TranslationsPage() {
     </label>
   )
 
+  // the opening card sits before the card named by its `before`; -1 = before the first one
+  const startAt = cards?.findIndex((c) => c.id === scards.start?.before) ?? -1
+
   if (admin === null) return <p className="loading">{t('loading')}</p>
   if (!admin) return <p className="loading">{t('adminsOnly')}</p>
   return (
@@ -507,9 +510,12 @@ export default function TranslationsPage() {
       </header>
       {failed && <p className="edit-error">{t('loadFailed')}</p>}
       {!cards && !failed && <p className="loading">{t('loading')}</p>}
-      {cards && special('start')}
+      {cards && startAt < 0 && special('start')}
       {cards?.map((card, i) => (
-        <Row key={card.id} n={i + 1} card={card} src={langs.src} tr={langs.tr} def={def} creds={creds} onSaved={saved} />
+        <Fragment key={card.id}>
+          {i === startAt && special('start')}
+          <Row n={i + 1} card={card} src={langs.src} tr={langs.tr} def={def} creds={creds} onSaved={saved} />
+        </Fragment>
       ))}
       {cards && special('end')}
     </div>
