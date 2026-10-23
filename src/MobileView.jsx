@@ -85,9 +85,6 @@ export default function MobileView() {
   const [scrollY, setScrollY] = useState(0)
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight)
   const listRef = useRef(null)
-  const headerRef = useRef(null)
-  // the language switcher (in the header) is off screen: the time navigation button takes its corner
-  const [switcherGone, setSwitcherGone] = useState(false)
   const jumpedRef = useRef(false) // the URL's anchor was handled on load
   const jumpRef = useRef(null) // scrolls to the card named by the URL's anchor; set on every render
 
@@ -155,16 +152,6 @@ export default function MobileView() {
     return () => observer.disconnect()
   }, [cards, lang, measure])
 
-  // the header exists once the cards have loaded
-  useEffect(() => {
-    if (!cards) return
-    const switcher = headerRef.current?.querySelector('.lang-switcher')
-    if (!switcher) return setSwitcherGone(true) // a single language: no switcher to make room for
-    const observer = new IntersectionObserver(([entry]) => setSwitcherGone(!entry.isIntersecting))
-    observer.observe(switcher)
-    return () => observer.disconnect()
-  }, [cards])
-
   // Open at the card named by the URL (#card-<id>), or at the opening card without one:
   // the browser can't do it, as the cards are drawn after the data loads. Later anchor
   // changes scroll there too.
@@ -212,11 +199,11 @@ export default function MobileView() {
 
   return (
     <div className="m-app">
-      <header className="m-header" ref={headerRef}>
+      <header className="m-header">
         <h1>{t('siteTitle')}</h1>
         <LangSwitcher />
       </header>
-      <TimeNav items={navItems} onGo={goTo} shown={switcherGone} current={current} />
+      <TimeNav items={navItems} onGo={goTo} current={current} />
       {mya !== null && scrollY >= COUNTER_MIN_SCROLL && (
         <div
           className="m-counter"
@@ -233,7 +220,7 @@ export default function MobileView() {
             </div>
           ) : item.card ? (
             <div className="m-item" key={item.card.id} data-mya={item.card.mya}>
-              <Card card={item.card} creds={null} sourcesModal />
+              <Card card={item.card} creds={null} sourcesModal mobile />
             </div>
           ) : (
             <div className="m-mark" key={item.mark.label}>

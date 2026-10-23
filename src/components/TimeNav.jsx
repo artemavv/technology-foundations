@@ -34,8 +34,7 @@ export function NavList({ items, onPick, current }) {
 // Mobile time navigation: a small circle button; opens a list of jump points,
 // each the date of a card with a short title. `items` = [{ title, card }];
 // `onGo(cardId)` scrolls to the card; `current` is the id of the entry on screen.
-// The button is hidden unless `shown`.
-export default function TimeNav({ items, onGo, shown, current }) {
+export default function TimeNav({ items, onGo, current }) {
   const { t } = useLang()
   const [open, setOpen] = useState(false)
 
@@ -51,7 +50,7 @@ export default function TimeNav({ items, onGo, shown, current }) {
     <>
       <button
         type="button"
-        className={`m-nav-btn${shown ? '' : ' m-nav-hidden'}`}
+        className="m-nav-btn"
         title={t('timeNav')}
         aria-label={t('timeNav')}
         aria-haspopup="dialog"

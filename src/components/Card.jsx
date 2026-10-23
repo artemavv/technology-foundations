@@ -80,8 +80,10 @@ function ZoomModal({ files, alt, onClose }) {
   )
 }
 
+const MOBILE_TOP_CLEARANCE = 56 // px kept free above a card scrolled back into view: the date counter and buttons
+
 // Renders just the card; the view supplies the positioning wrapper.
-function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
+function Card({ card, creds, onSaved, onDeleted, sourcesModal = false, mobile = false }) {
   const { pick, has, def, languages, lang, wikiHref, t } = useLang()
   const title = pick(card.title)
   const defLabel = languages.find((l) => l.code === def)?.label ?? def
@@ -97,11 +99,14 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
   const [expanded, setExpanded] = useState(false)
   // Desktop: a card may use at most 90% of the column height. When the full text
   // is taller, `fit` is that limit; the card collapses, and when expanded it
-  // grows to the limit and the text scrolls.
+  // grows to the limit and the text scrolls. On a phone (`mobile`) every card with
+  // more than one paragraph collapses to the first one; expanded, it shows it all.
+  // Either way "Show less" collapses it again.
   const [fit, setFit] = useState(null)
   const contents = pick(card.contents)
   const multiPara = /\S\s*\n\s*\n\s*\S/.test(String(contents ?? ''))
-  const collapsed = fit != null && multiPara && !expanded
+  const collapsible = multiPara && (mobile || fit != null)
+  const collapsed = collapsible && !expanded
 
   const measure = () => {
     const el = articleRef.current
@@ -208,6 +213,21 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
     if (collapsed && !e.target.closest('a, button')) setExpanded(true)
   }
 
+  // A card collapsed from far down its text leaves the screen behind it: bring its top back.
+  const scrollBackRef = useRef(false)
+  const collapse = () => {
+    scrollBackRef.current = mobile
+    setExpanded(false)
+  }
+  useLayoutEffect(() => {
+    if (!scrollBackRef.current) return
+    scrollBackRef.current = false
+    const top = articleRef.current?.getBoundingClientRect().top
+    if (top !== undefined && top < MOBILE_TOP_CLEARANCE) {
+      window.scrollTo({ top: window.scrollY + top - MOBILE_TOP_CLEARANCE })
+    }
+  }, [expanded])
+
   const popupOpen = showIllustration || showPhoto || (sourcesModal && showSources)
   useEffect(() => {
     if (!popupOpen) return
@@ -252,13 +272,13 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false }) {
         <a href={`#${anchor}`}>{title}</a>
       </h2>
       <RichText className="card-contents" text={contents} />
-      {collapsed && (
+      {collapsible && (
         <button
           type="button"
-          className="card-more"
-          onClick={() => setExpanded(true)}
+          className={`card-more${expanded ? ' card-less' : ''}`}
+          onClick={expanded ? collapse : () => setExpanded(true)}
         >
-          {t('showMore')}
+          {t(expanded ? 'showLess' : 'showMore')}
         </button>
       )}
       <div className="card-actions">
