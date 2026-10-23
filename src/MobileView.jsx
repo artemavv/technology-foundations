@@ -208,7 +208,7 @@ export default function MobileView() {
   return (
     <div className="m-app">
       <header className="m-header" ref={headerRef}>
-        <h1>PF</h1>
+        <h1>{t('siteTitle')}</h1>
         <LangSwitcher />
       </header>
       <TimeNav items={navItems} onGo={goTo} shown={switcherGone} />

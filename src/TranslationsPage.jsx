@@ -436,7 +436,7 @@ export default function TranslationsPage() {
   })
 
   useEffect(() => {
-    document.title = `PF — ${t('translationsTitle')}`
+    document.title = `${t('siteTitle')} — ${t('translationsTitle')}`
   }, [t])
 
   useEffect(() => {

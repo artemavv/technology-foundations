@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import DesktopView from './DesktopView.jsx'
 import MobileView from './MobileView.jsx'
+import { useLang } from './i18n.jsx'
 
 const MOBILE_QUERY = '(max-width: 700px)'
 
@@ -20,5 +21,9 @@ function useIsMobile() {
 }
 
 export default function App() {
+  const { t } = useLang()
+  useEffect(() => {
+    document.title = t('siteTitle')
+  }, [t])
   return useIsMobile() ? <MobileView /> : <DesktopView />
 }

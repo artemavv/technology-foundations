@@ -844,12 +844,20 @@ body,
   height: 48px;
   padding: 0 calc(var(--units-width) + 12px) 0 14px;
 }
+/* the site name stays in the page for screen readers and search engines, but is not shown */
 .m-header h1 {
-  margin: 0;
-  font-size: 18px;
-  color: #55606e;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 .m-header .lang-switcher {
+  margin-left: auto;
   position: relative;
   top: auto;
   right: auto;

@@ -86,8 +86,9 @@ Translatable fields are maps from language code to text: card `title`, `contents
 
 ## Changelog
 
-### Unreleased
+### 0.7.0
 
+- The page has a site name, "How it began" (translated: "Как всё началось", "Come tutto è iniziato", "Wie alles begann", "Cómo empezó todo"), as a hidden `<h1>` in the phone header: it is not shown, but stays in the page for screen readers and search engines. The same text is the page title (and, on the admin pages, its prefix). It is the `siteTitle` string in `src/strings.js`.
 - Translation management page for admins (`/translations.html`): all cards side by side in two languages, edited together.
 - Time navigation on phones: a small clock button at the top right opens a list of jump points, each with the date of a card and a short title (Universe, Earth, Life, …). The list is `public/data/nav.json` (sample in `seed/data/`): `[{ "card": "<card id>", "title": { "en": "Earth", "ru": "Земля" } }, …]`, in the order shown. Entries whose card does not exist are skipped, and a missing file means no button. The button is hidden at the top of the page and appears (fixed, in the corner of the language switcher) once the language switcher has scrolled out of view.
 - Linking to a card: opening a URL with a card anchor, e.g. `/#card-first-possible-fire` (or `#scard-start` / `#scard-end` for the special cards), scrolls to that card, on both desktop and phones; changing the anchor later does the same. On desktop the card goes to the left of the stage, and a card that is already fully visible stays put, so clicking a card's own title does not move the view.

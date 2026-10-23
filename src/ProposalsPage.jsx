@@ -311,7 +311,7 @@ export default function ProposalsPage() {
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
-    document.title = `PF — ${t('proposalsTitle')}`
+    document.title = `${t('siteTitle')} — ${t('proposalsTitle')}`
   }, [t])
 
   useEffect(() => {
