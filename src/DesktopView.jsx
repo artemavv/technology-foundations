@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Card from './components/Card.jsx'
 import SpecialCard from './components/SpecialCard.jsx'
 import TimelineBar from './components/TimelineBar.jsx'
@@ -60,13 +60,14 @@ export default function DesktopView() {
     })
   }, [])
 
-  const onDeleted = (id) => {
+  const positionedCache = useRef(new Map()) // see `positioned` below
+  const onDeleted = useCallback((id) => {
     setCards((prev) => prev.filter((c) => c.id !== id))
     setPending((prev) => prev.filter((c) => c.id !== id))
-  }
+  }, [])
 
   // a saved/approved/added card lands in the list matching its status
-  const onSaved = (updated) => {
+  const onSaved = useCallback((updated) => {
     const others = (list) => list.filter((c) => c.id !== updated.id)
     setCards((prev) =>
       updated.status === 'pending' ? others(prev) : [...others(prev), updated],
@@ -74,7 +75,7 @@ export default function DesktopView() {
     setPending((prev) =>
       updated.status === 'pending' ? [...others(prev), updated] : others(prev),
     )
-  }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -174,7 +175,14 @@ export default function DesktopView() {
   // sidebar doesn't reset when the user moves over to it
   if (mouseX !== null) cursorMyaRef.current = mapX(scrollLeft + mouseX)
   const cursorMya = cursorMyaRef.current
-  const positioned = sorted.map((card, i) => ({ ...card, x: xs[i] }))
+  // keep each card's object while neither it nor its position changed, so memo(Card) can skip it
+  const positioned = sorted.map((card, i) => {
+    const old = positionedCache.current.get(card.id)
+    if (old && old.src === card && old.card.x === xs[i]) return old.card
+    const next = { ...card, x: xs[i] }
+    positionedCache.current.set(card.id, { src: card, card: next })
+    return next
+  })
   // Scroll the card named by the URL's anchor to the left of the stage. With
   // `onlyIfHidden` a card that is already fully on screen stays put (clicking a
   // card's own title changes the anchor too).
