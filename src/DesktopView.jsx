@@ -7,8 +7,8 @@ import LangSwitcher from './components/LangSwitcher.jsx'
 import { useLang } from './i18n.jsx'
 import EditModal from './components/EditModal.jsx'
 import { adminCredentials, fetchPending, verifyAdmin } from './admin.js'
-import { formatKya } from './format.js'
-import { layoutTimeline } from './timeScale.js'
+import { formatAge } from './format.js'
+import { END_MYA, layoutTimeline } from './timeScale.js'
 
 export default function DesktopView() {
   const { t } = useLang()
@@ -156,8 +156,8 @@ export default function DesktopView() {
             style={{ left: Math.min(Math.max(mouseX, 40), viewportWidth - 40) }}
           >
             
-            {/* the timeline ends at 2500 BC (4.5 Kya) */}
-            {formatKya(Math.max(cursorMya, 0.0045) * 1000, 3)}
+            {/* the timeline ends at 2500 BC */}
+            {formatAge(Math.max(cursorMya, END_MYA))}
           </div>
         </>
       )}

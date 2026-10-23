@@ -8,6 +8,7 @@
 // the card anchors, so a period's on-screen width follows its card count.
 
 export const MIN_MYA = 0.0000045 // 2500 BC ≈ 0.0045 Mya (end of the timeline)
+export const END_MYA = 0.0045    // 2500 BC, where the timeline ends
 export const MAX_MYA = 13800     // the Big Bang
 
 export const POWER = 1 / 3
@@ -82,17 +83,24 @@ export function layoutTimeline(sortedMya, viewportWidth) {
     return a.x + (r - a.r) * slope
   }
 
+  // The timeline ends at END_MYA (2500 BC), just past the newest card: along
+  // the curve, but at most one max gap away so the tail stays reasonable. The
+  // stretch from the newest card to the end is its own segment, so mapTime and
+  // mapX stay exact inverses there too.
+  const endR = raw(END_MYA)
+  const extended = extrapolate(anchors[anchors.length - 2], last, endR)
+  const endX = Number.isFinite(extended)
+    ? Math.max(last.x, Math.min(extended, last.x + maxDelta))
+    : last.x + maxDelta
+
   const mapTime = (mya) => {
     const r = raw(mya)
     // The timeline starts at the first card: anything older (the 13.8 Gya
-    // marking) sits on its left edge. Past the newest card, extrapolate along
-    // the curve but cap the extension at one max gap so the tail stays reasonable.
+    // marking) sits on its left edge.
     if (r >= first.r) return first.x
     if (r <= last.r) {
-      return Math.min(
-        extrapolate(anchors[anchors.length - 2], last, r),
-        last.x + maxDelta,
-      )
+      if (endR >= last.r || r <= endR) return endX
+      return last.x + ((last.r - r) / (last.r - endR)) * (endX - last.x)
     }
     for (let i = 0; i < anchors.length - 1; i++) {
       const a = anchors[i]
@@ -112,8 +120,7 @@ export function layoutTimeline(sortedMya, viewportWidth) {
     if (x <= first.x) {
       r = first.r + (x - first.x) / ((anchors[1].x - first.x) / (anchors[1].r - first.r))
     } else if (x >= last.x) {
-      const prev = anchors[anchors.length - 2]
-      r = last.r + (x - last.x) / ((last.x - prev.x) / (last.r - prev.r))
+      r = endX > last.x ? last.r + Math.min((x - last.x) / (endX - last.x), 1) * (endR - last.r) : last.r
     } else {
       let i = 0
       while (i < anchors.length - 2 && x > anchors[i + 1].x) i++
