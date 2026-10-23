@@ -1,0 +1,86 @@
+[
+  {
+    "card": "big-bang",
+    "title": {
+      "en": "Universe",
+      "ru": "Вселенная"
+    }
+  },
+  {
+    "card": "earth-forms",
+    "title": {
+      "en": "Earth",
+      "ru": "Земля"
+    }
+  },
+  {
+    "card": "first-life",
+    "title": {
+      "en": "Life",
+      "ru": "Жизнь"
+    }
+  },
+  {
+    "card": "eukaryotes",
+    "title": {
+      "en": "Complex cells",
+      "ru": "Сложные клетки"
+    }
+  },
+  {
+    "card": "cambrian-explosion",
+    "title": {
+      "en": "Animals",
+      "ru": "Животные"
+    }
+  },
+  {
+    "card": "dinosaurs",
+    "title": {
+      "en": "Dinosaurs",
+      "ru": "Динозавры"
+    }
+  },
+  {
+    "card": "chicxulub-impact",
+    "title": {
+      "en": "Asteroid",
+      "ru": "Астероид"
+    }
+  },
+  {
+    "card": "first-hominins",
+    "title": {
+      "en": "Human lineage",
+      "ru": "Предки человека"
+    }
+  },
+  {
+    "card": "control-of-fire",
+    "title": {
+      "en": "Fire",
+      "ru": "Огонь"
+    }
+  },
+  {
+    "card": "homo-sapiens",
+    "title": {
+      "en": "Humans",
+      "ru": "Человек разумный"
+    }
+  },
+  {
+    "card": "agriculture",
+    "title": {
+      "en": "Farming",
+      "ru": "Земледелие"
+    }
+  },
+  {
+    "card": "writing",
+    "title": {
+      "en": "Writing",
+      "ru": "Письменность"
+    }
+  }
+]

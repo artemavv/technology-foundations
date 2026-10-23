@@ -1,9 +1,10 @@
 // Admin page: every card, oldest first, in two columns (source language |
 // translation language). "Edit" turns a row into two forms that are saved
 // together. Date, sources and pictures are shared by all languages, so only the
-// source form edits them.
+// source form edits them. The two special cards (title and description only)
+// have their own rows, with their own forms, before the first and after the last card.
 import { useEffect, useState } from 'react'
-import { adminCredentials, saveCard, sourcesToText, verifyAdmin } from './admin.js'
+import { adminCredentials, saveCard, saveSpecialCard, sourcesToText, verifyAdmin } from './admin.js'
 import PictureField from './components/PictureField.jsx'
 import RichText from './components/RichText.jsx'
 import { useLang, wikipediaUrl } from './i18n.jsx'
@@ -228,6 +229,158 @@ function RowEditor({ card, src, tr, def, creds, onSaved, onClose }) {
   )
 }
 
+// One language's fields of a special card: no date, links, sources or pictures.
+function SpecialLangForm({ code, def, card, values, onChange }) {
+  const { t, languages } = useLang()
+  const label = languages.find((l) => l.code === code)?.label ?? code
+  const required = code === def // a translation may be left empty
+  return (
+    <div className={values.status === 'pending' ? 'tr-form tr-pending' : 'tr-form'}>
+      <h3>{label}</h3>
+      {code !== def && (
+        <label>
+          {t('translationStatus')}
+          <select value={values.status} onChange={(e) => onChange({ status: e.target.value })}>
+            <option value="completed">{t('statusCompleted')}</option>
+            <option value="pending">{t('statusPending')}</option>
+          </select>
+        </label>
+      )}
+      <label>
+        {t('title')}
+        <input
+          value={values.title}
+          onChange={(e) => onChange({ title: e.target.value })}
+          placeholder={code === def ? '' : textIn(card.title, def, def)}
+          required={required}
+        />
+      </label>
+      <label>
+        {t('description')}
+        <textarea
+          rows={8}
+          value={values.contents}
+          onChange={(e) => onChange({ contents: e.target.value })}
+          placeholder={code === def ? '' : textIn(card.contents, def, def)}
+          required={required}
+        />
+        <span className="edit-hint">{t('descriptionHint')}</span>
+      </label>
+    </div>
+  )
+}
+
+// Both forms of a special card row; remounted when a language dropdown changes.
+function SpecialRowEditor({ which, card, src, tr, def, creds, onSaved, onClose }) {
+  const { t } = useLang()
+  const [values, setValues] = useState(() =>
+    Object.fromEntries(
+      [src, tr].map((code) => [
+        code,
+        {
+          title: textIn(card.title, code, def),
+          contents: textIn(card.contents, code, def),
+          status: statusOf(card, code, def),
+        },
+      ]),
+    ),
+  )
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    const both = (key) => ({ [src]: values[src][key], [tr]: values[tr][key] })
+    try {
+      onSaved(
+        which,
+        await saveSpecialCard(creds, which, {
+          title: both('title'),
+          contents: both('contents'),
+          // the default language is always completed
+          langStatus: Object.fromEntries(
+            [src, tr].filter((c) => c !== def).map((c) => [c, values[c].status]),
+          ),
+        }),
+      )
+      onClose()
+    } catch (err) {
+      setError(err.message)
+      setSaving(false)
+    }
+  }
+
+  const form = (code) => (
+    <SpecialLangForm
+      code={code}
+      def={def}
+      card={card}
+      values={values[code]}
+      onChange={(patch) => setValues((v) => ({ ...v, [code]: { ...v[code], ...patch } }))}
+    />
+  )
+
+  return (
+    <form
+      className="tr-edit"
+      onSubmit={submit}
+      onKeyDown={(e) => e.key === 'Escape' && !saving && onClose()}
+    >
+      <div className="tr-grid">
+        {form(src)}
+        {form(tr)}
+      </div>
+      {error && <p className="edit-error" role="alert">{error}</p>}
+      <div className="edit-buttons">
+        <button type="button" onClick={onClose} disabled={saving}>
+          {t('cancel')}
+        </button>
+        <button type="submit" className="primary" disabled={saving}>
+          {saving ? t('saving') : t('save')}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+// A special card's row: `which` is 'start' (before the first card) or 'end' (after the last).
+function SpecialRow({ which, card, src, tr, def, creds, onSaved }) {
+  const { t } = useLang()
+  const [editing, setEditing] = useState(false)
+  return (
+    <section className="tr-row tr-special" id={`scard-${which}`}>
+      <div className="tr-time">{which === 'start' ? t('specialStart') : t('specialEnd')}</div>
+      {editing ? (
+        <SpecialRowEditor
+          key={`${src}|${tr}`}
+          which={which}
+          card={card}
+          src={src}
+          tr={tr}
+          def={def}
+          creds={creds}
+          onSaved={onSaved}
+          onClose={() => setEditing(false)}
+        />
+      ) : (
+        <>
+          <div className="tr-grid">
+            <CardView card={card} code={src} def={def} />
+            <CardView card={card} code={tr} def={def} />
+          </div>
+          <div className="edit-buttons">
+            <button type="button" onClick={() => setEditing(true)}>
+              {t('edit')}
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  )
+}
+
 function Row({ n, card, src, tr, def, creds, onSaved }) {
   const { t } = useLang()
   const [editing, setEditing] = useState(false)
@@ -271,6 +424,7 @@ export default function TranslationsPage() {
   const [creds] = useState(adminCredentials)
   const [admin, setAdmin] = useState(null) // null = checking
   const [cards, setCards] = useState(null)
+  const [scards, setScards] = useState({}) // special cards by key; missing ones are empty rows
   const [failed, setFailed] = useState(false)
   const [langs, setLangs] = useState(() => {
     const q = new URLSearchParams(window.location.search)
@@ -296,6 +450,10 @@ export default function TranslationsPage() {
       .then((r) => r.json())
       .then((list) => setCards([...list].sort((a, b) => b.mya - a.mya)))
       .catch(() => setFailed(true))
+    fetch('/data/scards.json')
+      .then((r) => r.json())
+      .then((all) => setScards(all && typeof all === 'object' ? all : {}))
+      .catch(() => setScards({}))
   }, [admin])
 
   // picking the language already chosen in the other dropdown swaps the two
@@ -309,6 +467,19 @@ export default function TranslationsPage() {
   }
 
   const saved = (card) => setCards((list) => list.map((c) => (c.id === card.id ? card : c)))
+  const savedSpecial = (which, card) => setScards((all) => ({ ...all, [which]: card }))
+
+  const special = (which) => (
+    <SpecialRow
+      which={which}
+      card={scards[which] ?? {}}
+      src={langs.src}
+      tr={langs.tr}
+      def={def}
+      creds={creds}
+      onSaved={savedSpecial}
+    />
+  )
 
   const select = (which, name) => (
     <label>
@@ -336,9 +507,11 @@ export default function TranslationsPage() {
       </header>
       {failed && <p className="edit-error">{t('loadFailed')}</p>}
       {!cards && !failed && <p className="loading">{t('loading')}</p>}
+      {cards && special('start')}
       {cards?.map((card, i) => (
         <Row key={card.id} n={i + 1} card={card} src={langs.src} tr={langs.tr} def={def} creds={creds} onSaved={saved} />
       ))}
+      {cards && special('end')}
     </div>
   )
 }

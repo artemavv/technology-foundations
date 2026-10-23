@@ -17,6 +17,7 @@ export const PAD = 100
 export const START_X = 40 // left edge of the first card, from the screen's left side
 export const CARD_WIDTH = 300
 export const MIN_CLEAR_GAP = 100 // min empty space between adjacent card edges
+export const SCARD_WIDTH = 460 // special cards (before the first and after the last card) are wider
 export const MAX_GAP_RATIO = 0.3825 // max left-edge-to-left-edge distance, vs viewport
 
 // Reference canvas for the raw (pre-clamp) curve. Only differences matter;
@@ -41,15 +42,21 @@ export function xToMya(x) {
 }
 
 // Lay out cards (oldest first, i.e. descending mya) into static x positions.
-// Returns { xs, contentWidth, mapTime } where mapTime(mya) -> x interpolates
-// any point in time from the card anchors.
-export function layoutTimeline(sortedMya, viewportWidth) {
+// Returns { xs, contentWidth, mapTime, mapX, startCardX, endCardX } where
+// mapTime(mya) -> x interpolates any point in time from the card anchors.
+// `special` says which special cards exist: { start, end }. The start one sits
+// before the first card (so the oldest tick follows it); the end one sits after
+// the last card, and the end of the timeline (2500 BC) follows it. startCardX
+// and endCardX are their left edges, or null.
+export function layoutTimeline(sortedMya, viewportWidth, special = {}) {
   if (sortedMya.length === 0) {
     return {
       xs: [],
       contentWidth: CARD_WIDTH + PAD * 2,
       mapTime: () => PAD,
       mapX: () => MAX_MYA,
+      startCardX: null,
+      endCardX: null,
     }
   }
 
@@ -57,19 +64,26 @@ export function layoutTimeline(sortedMya, viewportWidth) {
   const maxDelta = Math.max(minDelta, MAX_GAP_RATIO * viewportWidth)
 
   const rawXs = sortedMya.map(timeToX)
-  const xs = [START_X]
+  const startCardX = special.start ? START_X : null
+  const xs = [special.start ? START_X + SCARD_WIDTH + MIN_CLEAR_GAP : START_X]
   for (let i = 1; i < rawXs.length; i++) {
     const desired = rawXs[i] - rawXs[i - 1]
     const delta = Math.min(Math.max(desired, minDelta), maxDelta)
     xs.push(xs[i - 1] + delta)
   }
 
+  // the end card follows the newest card at the minimum distance
+  const endCardOf = (lastX) => (special.end ? lastX + CARD_WIDTH + MIN_CLEAR_GAP : null)
+
   if (sortedMya.length === 1) {
+    const endCardX = endCardOf(xs[0])
     return {
       xs,
-      contentWidth: xs[0] + CARD_WIDTH + PAD,
+      contentWidth: (endCardX === null ? xs[0] + CARD_WIDTH : endCardX + SCARD_WIDTH) + PAD,
       mapTime: () => xs[0],
       mapX: () => sortedMya[0],
+      startCardX,
+      endCardX,
     }
   }
 
@@ -83,15 +97,20 @@ export function layoutTimeline(sortedMya, viewportWidth) {
     return a.x + (r - a.r) * slope
   }
 
-  // The timeline ends at END_MYA (2500 BC), just past the newest card: along
-  // the curve, but at most one max gap away so the tail stays reasonable. The
-  // stretch from the newest card to the end is its own segment, so mapTime and
-  // mapX stay exact inverses there too.
+  // The timeline ends at END_MYA (2500 BC), just past the newest card (past the
+  // end card when there is one). Without an end card that is along the curve,
+  // but at most one max gap away so the tail stays reasonable. The stretch from
+  // the newest card to the end is its own segment, so mapTime and mapX stay
+  // exact inverses there too.
   const endR = raw(END_MYA)
+  const endCardX = endCardOf(last.x)
   const extended = extrapolate(anchors[anchors.length - 2], last, endR)
-  const endX = Number.isFinite(extended)
-    ? Math.max(last.x, Math.min(extended, last.x + maxDelta))
-    : last.x + maxDelta
+  const endX =
+    endCardX !== null
+      ? endCardX + SCARD_WIDTH + MIN_CLEAR_GAP
+      : Number.isFinite(extended)
+        ? Math.max(last.x, Math.min(extended, last.x + maxDelta))
+        : last.x + maxDelta
 
   const mapTime = (mya) => {
     const r = raw(mya)
@@ -136,5 +155,5 @@ export function layoutTimeline(sortedMya, viewportWidth) {
   // which sits just past the newest card.
   const contentWidth = Math.max(last.x + CARD_WIDTH, mapTime(MIN_MYA)) + PAD
 
-  return { xs, contentWidth, mapTime, mapX }
+  return { xs, contentWidth, mapTime, mapX, startCardX, endCardX }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Card from './components/Card.jsx'
+import SpecialCard from './components/SpecialCard.jsx'
 import TimelineBar from './components/TimelineBar.jsx'
 import UnitsBar from './components/UnitsBar.jsx'
 import Sidebar from './components/Sidebar.jsx'
@@ -8,12 +9,15 @@ import { useLang } from './i18n.jsx'
 import EditModal from './components/EditModal.jsx'
 import { adminCredentials, fetchPending, verifyAdmin } from './admin.js'
 import { formatAge } from './format.js'
-import { END_MYA, layoutTimeline } from './timeScale.js'
+import { anchorTarget } from './anchors.js'
+import { loadSpecialCards } from './specialCards.js'
+import { CARD_WIDTH, END_MYA, SCARD_WIDTH, START_X, layoutTimeline } from './timeScale.js'
 
 export default function DesktopView() {
   const { t } = useLang()
   const [cards, setCards] = useState(null)
   const [units, setUnits] = useState([])
+  const [scards, setScards] = useState({}) // special cards: { start?, end? }
   const [scrollLeft, setScrollLeft] = useState(0)
   const [viewportWidth, setViewportWidth] = useState(() =>
     typeof window === 'undefined' ? 1440 : window.innerWidth,
@@ -36,6 +40,9 @@ export default function DesktopView() {
   const [creds, setCreds] = useState(null)
   const scrollRef = useRef(null)
   const cursorMyaRef = useRef(null) // last age under the cursor line
+  const [measured, setMeasured] = useState(false) // the stage width is known, so card positions are final
+  const jumpedRef = useRef(false) // the URL's anchor was handled on load
+  const jumpRef = useRef(null) // scrolls to the card named by the URL's anchor; set on every render
 
   // admin = login/password GET params that the server accepts
   useEffect(() => {
@@ -72,8 +79,10 @@ export default function DesktopView() {
       // the sidebar is optional: a missing file just means no blocks
       fetch('/data/blocks.json').then((r) => r.json()).catch(() => []),
       fetch('/data/cats.json').then((r) => r.json()).catch(() => ({})),
-    ]).then(([cardData, unitData, blockData, catData]) => {
+      loadSpecialCards(),
+    ]).then(([cardData, unitData, blockData, catData, specialData]) => {
       if (!cancelled) {
+        setScards(specialData)
         setCards(cardData)
         setUnits(unitData)
         setBlocks(blockData)
@@ -102,8 +111,25 @@ export default function DesktopView() {
     if (el) {
       setViewportWidth(el.clientWidth)
       setScrollLeft(el.scrollLeft)
+      setMeasured(true)
     }
   }
+
+  // Open at the card named by the URL (#card-<id>): the browser can't do it, as
+  // the cards are drawn after the data loads and sit in a scroller of their own.
+  // The layout depends on the stage width, so wait until it is measured.
+  useEffect(() => {
+    if (!cards || !measured || jumpedRef.current) return
+    jumpedRef.current = true
+    jumpRef.current?.(false)
+  }, [cards, measured])
+
+  // later changes of the anchor (back/forward, a pasted link) scroll there too
+  useEffect(() => {
+    const onHash = () => jumpRef.current?.(true)
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   // the stage width changes with the window and with the sidebar
   useEffect(() => {
@@ -130,15 +156,31 @@ export default function DesktopView() {
 
   // oldest first = descending mya, leftmost
   const sorted = [...cards, ...pending].sort((a, b) => b.mya - a.mya)
-  const { xs, contentWidth, mapTime, mapX } = layoutTimeline(
+  const { xs, contentWidth, mapTime, mapX, startCardX, endCardX } = layoutTimeline(
     sorted.map((c) => c.mya),
     viewportWidth,
+    { start: Boolean(scards.start), end: Boolean(scards.end) },
   )
   // age under the cursor line; kept after the mouse leaves the stage so the
   // sidebar doesn't reset when the user moves over to it
   if (mouseX !== null) cursorMyaRef.current = mapX(scrollLeft + mouseX)
   const cursorMya = cursorMyaRef.current
   const positioned = sorted.map((card, i) => ({ ...card, x: xs[i] }))
+  // Scroll the card named by the URL's anchor to the left of the stage. With
+  // `onlyIfHidden` a card that is already fully on screen stays put (clicking a
+  // card's own title changes the anchor too).
+  jumpRef.current = (onlyIfHidden) => {
+    const el = scrollRef.current
+    const target = anchorTarget()
+    if (!el || !target) return
+    const x = target.special
+      ? { start: startCardX, end: endCardX }[target.key]
+      : positioned.find((c) => c.id === target.key)?.x
+    if (x === undefined || x === null) return
+    const width = target.special ? SCARD_WIDTH : CARD_WIDTH
+    if (onlyIfHidden && x >= el.scrollLeft && x + width <= el.scrollLeft + el.clientWidth) return
+    el.scrollLeft = Math.max(0, x - START_X)
+  }
 
   return (
     <div className={`app${sidebarOpen ? ' sidebar-open' : ''}`}>
@@ -169,6 +211,12 @@ export default function DesktopView() {
         <div className="stage-content" style={{ width: `calc(${contentWidth}px + var(--sidebar-reserve))` }}>
           <TimelineBar mapTime={mapTime} />
           <div className="cards-row">
+            {startCardX !== null && (
+              <div className="card-col scard-col" style={{ left: startCardX, width: SCARD_WIDTH }}>
+                <SpecialCard which="start" card={scards.start} />
+                <div className="card-tail" />
+              </div>
+            )}
             {positioned.map((card) => (
               <div className="card-col" key={card.id} style={{ left: card.x }}>
                 <Card
@@ -180,6 +228,12 @@ export default function DesktopView() {
                 <div className="card-tail" />
               </div>
             ))}
+            {endCardX !== null && (
+              <div className="card-col scard-col" style={{ left: endCardX, width: SCARD_WIDTH }}>
+                <SpecialCard which="end" card={scards.end} />
+                <div className="card-tail" />
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -48,6 +48,31 @@ The API (`server/adminApi.js`) is a Vite plugin, so it runs under `npm run dev` 
 
 With the same `login` and `password` parameters, open `/translations.html` (e.g. `http://localhost:5173/translations.html?login=…&password=…`). It lists all published cards, oldest first, in two columns: a source language and a translation language, chosen in the dropdowns at the top (picking the language already chosen in the other dropdown swaps them). **Edit** under a row turns it into two side-by-side forms with a single **Save**. Title, description and Wikipedia link are edited per language; the date, sources and pictures are shared by all languages, so they are editable in the source form only. Pending cards are not listed. Each non-default language of a card has a translation status, **Completed** or **Pending**, set in its form; pending translations are shown with a light yellow background. English (the default language) is always completed. It is stored as `"langStatus": { "ru": "pending" }` on the card; a language without an entry is completed, so existing data needs no change, and a language with no text has no status. The status only marks the work for admins; the public site shows pending translations like any other. Like the rest of the admin API, it works under `npm run dev` and `npm run preview`.
 
+## Proposals page
+
+With the same `login` and `password` parameters, open `/proposals.html` (e.g. `http://localhost:5173/proposals.html?login=…&password=…`). It lists the cards proposed by visitors (stored as pending in `data/pending.json`), newest first, each with its date, submission time, text, Wikipedia link, sources and pictures. For each proposal an admin can:
+
+- **Approve**: publish it as it is; it then appears on the timeline and on the translations page.
+- **Edit**: change the date, sources, pictures and, per language, the title, description and Wikipedia link. Visitors write in the language they are viewing, so the editor also offers the default language to add the missing text; a warning shows while a proposal has none. **Save** keeps it pending, **Approve** saves and publishes.
+- **Reject**: delete it, with its pictures, after a confirmation.
+
+Proposals made before this page existed have no submission time and are listed last. It uses the existing admin API (`GET /api/pending`, `PUT /api/cards/:id` with `approve`, `DELETE /api/cards/:id`).
+
+## Special cards
+
+Two special cards frame the timeline: the **opening card** (`start`) stands before the first card, and the **closing card** (`end`) after the last one. They have only a title and a description: no date, Wikipedia link, sources or pictures. They are wider than ordinary cards and have a bigger header; on a phone they use the full width of the list.
+
+They live in `public/data/scards.json` (sample in `seed/data/`), with the same per-language maps as cards:
+
+```json
+{
+  "start": { "title": { "en": "…", "ru": "…" }, "contents": { "en": "…", "ru": "…" } },
+  "end": { "title": { "en": "…" }, "contents": { "en": "…" } }
+}
+```
+
+A missing file, or a card without any text, simply leaves that card out. On the timeline bar the oldest tick (13.8 Gya) follows the opening card, and the newest one (2500 BC) follows the closing card. The special cards are edited on the translations page, which has a separate row for each (before the first and after the last card) with a form for the title and description only. Behind it is `PUT /api/scards/start` or `/api/scards/end` (admin only).
+
 ## Languages
 
 `public/data/languages.json` lists the languages (`[{ "code": "en", "label": "English" }, …]`); the first is the default and the fallback. The seed ships English (default), Russian, Italian, German and Spanish. To add one, append an entry and add a block for its code in `src/strings.js` (interface text; English is used for missing keys).
@@ -55,7 +80,7 @@ With the same `login` and `password` parameters, open `/translations.html` (e.g.
 Translatable fields are maps from language code to text: card `title`, `contents` and `wikipedia`, block `title`, category `label` (`cats.json`) and unit `label` (`timeline.json`). Example: `"title": { "en": "Earth forms", "de": "Entstehung der Erde" }`. Everything else (dates, pictures, sources) is shared by all languages. Date units stay Gya / Mya / Kya / BC in every language.
 
 - If the chosen language has no text, the default language is shown (cards get a small marker). A Wikipedia link falls back the same way; a bare article title opens in that language's Wikipedia edition (`de.wikipedia.org/wiki/…`).
-- The language is taken from `?lang=de`, then the remembered choice, then the browser language, then the default. The switcher is a flag circle at the top right; click it to pick another flag (flags for other language codes need an entry in `src/components/LangSwitcher.jsx`; without one the code is shown).
+- The language is taken from `?lang=de`, then the remembered choice, then the browser language, then the default. The address bar is kept in sync: `?lang=` always shows the language on screen (other parameters and the `#anchor` stay), so a copied URL or card link, e.g. `/?lang=ru#card-first-possible-fire`, opens in that language. A link's language is not remembered; only picking a flag is. The switcher is a flag circle at the top right; click it to pick another flag (flags for other language codes need an entry in `src/components/LangSwitcher.jsx`; without one the code is shown).
 - Admin forms edit the current language only: switch language, then edit. Saving merges that language into the card and leaves the others alone; clearing a field removes that translation (not allowed for the last one). The API rejects plain strings for these fields. Older data files that still hold plain strings keep displaying (read as the default language) and are converted when the card is next saved.
 - Visitor-submitted cards are stored in the language the visitor was viewing.
 
@@ -64,6 +89,10 @@ Translatable fields are maps from language code to text: card `title`, `contents
 ### Unreleased
 
 - Translation management page for admins (`/translations.html`): all cards side by side in two languages, edited together.
+- Time navigation on phones: a small clock button at the top right opens a list of jump points, each with the date of a card and a short title (Universe, Earth, Life, …). The list is `public/data/nav.json` (sample in `seed/data/`): `[{ "card": "<card id>", "title": { "en": "Earth", "ru": "Земля" } }, …]`, in the order shown. Entries whose card does not exist are skipped, and a missing file means no button. The button is hidden at the top of the page and appears (fixed, in the corner of the language switcher) once the language switcher has scrolled out of view.
+- Linking to a card: opening a URL with a card anchor, e.g. `/#card-first-possible-fire` (or `#scard-start` / `#scard-end` for the special cards), scrolls to that card, on both desktop and phones; changing the anchor later does the same. On desktop the card goes to the left of the stage, and a card that is already fully visible stays put, so clicking a card's own title does not move the view.
+- Proposals page for admins (`/proposals.html`): review the cards proposed by visitors, with approve, edit and reject. New proposals are stored with a submission time.
+- Two special cards (title and text only) before the first and after the last card, wider and with bigger headers, edited on the translations page; the 13.8 Gya and 2500 BC ticks sit just outside them.
 
 ### 0.6.0
 

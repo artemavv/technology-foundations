@@ -2,11 +2,15 @@
 //   GET  /api/admin/check  admin: 204 if credentials are valid, else 401
 //   GET  /api/pending      admin: list pending cards
 //   POST /api/cards        anyone: add a card. Admin -> published at once;
-//                          anonymous -> 'pending' (stored outside public/)
+//                          anonymous -> 'pending' (stored outside public/, with a
+//                          `submitted` ISO timestamp that is dropped on approval)
 //   PUT  /api/cards/:id    admin: edit a card; `approve: true` publishes a pending one
 //   PUT  /api/pictures     admin: upload a JPEG/PNG/WebP (raw body); returns { name }
 //   POST /api/blocks       admin: add a sidebar block { title, time, category }; stored as { id, title, kya, category }
 //   DELETE /api/cards/:id  admin: delete a card and its pictures (if no other card uses them)
+//   PUT  /api/scards/:key  admin: edit a special card ('start' or 'end'; created if missing).
+//                          Only { title, contents, langStatus }; stored in public/data/scards.json
+//                          as { start: {...}, end: {...} } with the same per-language maps as cards.
 // Sources are stored as { url, title? }; the title is typed as "URL (title)" or
 // fetched from the page when missing.
 // Translatable fields (title, contents, wikipedia on cards; title on blocks) are
@@ -32,6 +36,7 @@ const STATUSES = ['completed', 'pending'] // translation status; stored only whe
 const MAX_PICTURE =2 * 1024 * 1024
 const PICTURE_NAME = /^[\w-][\w.-]*\.(jpg|png|webp|svg)$/i
 const MAX_TITLE = 40
+const SPECIAL_KEYS = ['start', 'end'] // the special cards: before the first and after the last card
 const MAX_PENDING = 200
 const SUBMIT_LIMIT = { count: 5, windowMs: 60 * 60 * 1000 } // per IP
 
@@ -84,6 +89,34 @@ function parseSource(line) {
   return title ? { url, title } : { url }
 }
 
+// Optional { <code>: 'completed' | 'pending' }; { value: undefined } when not sent.
+function langStatus(v, langs) {
+  if (v === undefined) return { value: undefined }
+  if (!v || typeof v !== 'object' || Array.isArray(v)) {
+    return { error: 'Translation status must be a map of language code to status' }
+  }
+  for (const [code, status] of Object.entries(v)) {
+    if (!langs.includes(code)) return { error: `Unknown language: ${code}` }
+    if (!STATUSES.includes(status)) return { error: `Invalid translation status: ${status}` }
+  }
+  return { value: v }
+}
+
+// Special card: only a title and a description (and translation status).
+function validateSpecial(body, langs) {
+  if (!body || typeof body !== 'object') return { error: 'Invalid body' }
+  const out = {}
+  for (const key of ['title', 'contents']) {
+    const m = langMap(body[key], key === 'title' ? 'Title' : 'Description', langs)
+    if (m.error) return m
+    out[key] = m.value
+  }
+  const status = langStatus(body.langStatus, langs)
+  if (status.error) return status
+  if (status.value) out.langStatus = status.value
+  return { value: out }
+}
+
 // Returns { value } or { error }. Text maps may hold empty strings (= remove
 // that language); the caller checks the merged result.
 function validate(body, langs) {
@@ -110,17 +143,9 @@ function validate(body, langs) {
   if (Object.values(out.wikipedia).some((w) => w && !isWikipedia(w))) {
     return { error: 'Wikipedia link must be a wikipedia.org URL' }
   }
-  if (body.langStatus !== undefined) {
-    const s = body.langStatus
-    if (!s || typeof s !== 'object' || Array.isArray(s)) {
-      return { error: 'Translation status must be a map of language code to status' }
-    }
-    for (const [code, status] of Object.entries(s)) {
-      if (!langs.includes(code)) return { error: `Unknown language: ${code}` }
-      if (!STATUSES.includes(status)) return { error: `Invalid translation status: ${status}` }
-    }
-    out.langStatus = s
-  }
+  const status = langStatus(body.langStatus, langs)
+  if (status.error) return status
+  if (status.value) out.langStatus = status.value
   for (const key of ['photo', 'illustration']) {
     const v = body[key]
     if (v === undefined) continue
@@ -239,6 +264,7 @@ export default function adminApi({ login, password }) {
   const pendingFile = resolve('data/pending.json')
   const picturesDir = resolve('public/pictures')
   const blocksFile = resolve('public/data/blocks.json')
+  const scardsFile = resolve('public/data/scards.json')
   const catsFile = resolve('public/data/cats.json')
   const languagesFile = resolve('public/data/languages.json')
   let queue = Promise.resolve() // serialize read-modify-write cycles
@@ -400,6 +426,7 @@ export default function adminApi({ login, password }) {
             return { ...fresh, status: 'published' }
           }
           fresh.status = 'pending'
+          fresh.submitted = new Date().toISOString()
           await writeJson(pendingFile, [...pending, fresh])
           return fresh
         })
@@ -425,6 +452,34 @@ export default function adminApi({ login, password }) {
       await mkdir(picturesDir, { recursive: true })
       await writeFile(resolve(picturesDir, name), buf)
       return send(res, 201, { name })
+    }
+
+    const sc = url.match(/^\/api\/scards\/([\w-]+)$/)
+    if (req.method === 'PUT' && sc) {
+      if (!admin) return deny(res)
+      if (!SPECIAL_KEYS.includes(sc[1])) return send(res, 404, { error: 'No such special card' })
+      let body
+      try {
+        body = JSON.parse((await readBody(req)).toString('utf8'))
+      } catch {
+        return send(res, 400, { error: 'Invalid JSON' })
+      }
+      const langs = await languages()
+      const { value, error } = validateSpecial(body, langs)
+      if (error) return send(res, 400, { error })
+      try {
+        const saved = await locked(async () => {
+          const all = await readJson(scardsFile, {})
+          const card = all[sc[1]] ?? {}
+          const problem = applyFields(card, value, langs[0])
+          if (problem) return { error: problem }
+          await writeJson(scardsFile, { ...all, [sc[1]]: card })
+          return card
+        })
+        return saved.error ? send(res, 400, { error: saved.error }) : send(res, 200, saved)
+      } catch {
+        return send(res, 500, { error: 'Could not save' })
+      }
     }
 
     const m = url.match(/^\/api\/cards\/([\w-]+)$/)
@@ -455,7 +510,7 @@ export default function adminApi({ login, password }) {
             await removeUnused(old, [...cards, ...pending])
             return waiting
           }
-          const { status, ...approved } = waiting
+          const { status, submitted, ...approved } = waiting
           await writeJson(cardsFile, [...cards, approved])
           await writeJson(pendingFile, pending.filter((c) => c.id !== m[1]))
           return { ...approved, status: 'published' }

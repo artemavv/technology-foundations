@@ -1,0 +1,22 @@
+{
+  "start": {
+    "title": {
+      "en": "How modern technology became possible",
+      "ru": "Как стала возможной современная техника"
+    },
+    "contents": {
+      "en": "This is a timeline of the events that made modern technology possible, from the Big Bang 13.8 billion years ago to the first cities and writing around 2500 BC.\n\nScroll to travel through time. Going forward in time, the cards move from right to left. The scale is not linear: the first billions of years hold only a few events, and the last few thousand years are crowded with them.\n\nClick a card's title to link to it, and use the W and S icons for Wikipedia and the sources.",
+      "ru": "Это лента времени событий, благодаря которым стала возможной современная техника: от Большого взрыва 13,8 млрд лет назад до первых городов и письменности около 2500 г. до н. э.\n\nПрокручивайте ленту, чтобы путешествовать во времени. При движении вперёд карточки смещаются справа налево. Шкала нелинейная: на первые миллиарды лет приходится лишь несколько событий, а последние несколько тысяч лет ими переполнены.\n\nНажмите на заголовок карточки, чтобы получить ссылку на неё; значки W и S ведут на Википедию и к источникам."
+    }
+  },
+  "end": {
+    "title": {
+      "en": "And then?",
+      "ru": "Что дальше?"
+    },
+    "contents": {
+      "en": "By 2500 BC people have farming, cities, metal, the wheel and writing. Everything later is built on these foundations: bronze and iron, mathematics, printing, steam, electricity and computers are still to come.\n\nThis timeline stops here, where written history takes over from archaeology.",
+      "ru": "К 2500 г. до н. э. у людей уже есть земледелие, города, металл, колесо и письменность. На этом фундаменте строится всё остальное: бронза и железо, математика, книгопечатание, паровые машины, электричество и компьютеры ещё впереди.\n\nЛента времени заканчивается здесь, там, где письменная история сменяет археологию."
+    }
+  }
+}

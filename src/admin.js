@@ -75,3 +75,7 @@ export const sourcesToText = (sources) =>
     .join('\n')
 
 export const createBlock =(creds, fields) => send('POST', '/api/blocks', creds, fields)
+
+// Special card ('start' or 'end'): title, contents (language maps) and langStatus only.
+export const saveSpecialCard = (creds, key, fields) =>
+  send('PUT', `/api/scards/${encodeURIComponent(key)}`, creds, fields)

@@ -12,7 +12,11 @@ export default defineConfig(({ mode }) => {
     ],
     build: {
       rollupOptions: {
-        input: { main: 'index.html', translations: 'translations.html' },
+        input: {
+          main: 'index.html',
+          translations: 'translations.html',
+          proposals: 'proposals.html',
+        },
       },
     },
   }

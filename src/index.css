@@ -212,6 +212,20 @@ body,
   text-decoration: underline;
 }
 
+/* special cards: wider (the view sets the column width) with a bigger header */
+.scard {
+  padding: 20px 22px;
+}
+.scard .scard-title {
+  font-size: 30px;
+  line-height: 1.2;
+  margin: 0 0 14px;
+}
+.scard-col .scard {
+  max-height: 90%;
+  overflow-y: auto;
+}
+
 .card-contents p {
   margin: 0 0 8px;
   white-space: pre-line;
@@ -870,6 +884,13 @@ body,
   border-radius: 8px;
   border-left-color: #d8dce2;
 }
+/* special cards use the full list width, with a smaller header than on desktop */
+.m-item[data-scard] {
+  width: 100%;
+}
+.m-item .scard .scard-title {
+  font-size: 24px;
+}
 /* a date marking above its card, across the full width */
 .m-mark {
   position: relative;
@@ -1047,4 +1068,163 @@ body,
   color: #fff;
   font-size: 11px;
   text-align: center;
+}
+
+/* the special cards' rows on the translations page */
+.tr-special {
+  border-left: 3px solid #2563eb;
+  padding-left: 12px;
+}
+
+/* ---- proposals page (admin) ---- */
+.pr-item {
+  border-left: 3px solid #f59e0b; /* the orange of pending cards */
+  padding-left: 12px;
+}
+.pr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #55606e;
+}
+.pr-date {
+  font-weight: 600;
+}
+.pr-count {
+  margin-left: 10px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: #fde68a;
+  color: #854d0e;
+  font-size: 14px;
+  vertical-align: middle;
+}
+.pr-lang {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.pr-sources {
+  font-size: 14px;
+}
+.pr-sources ol {
+  margin: 4px 0 0;
+  padding-left: 22px;
+}
+.pr-pictures {
+  display: flex;
+  gap: 8px;
+}
+.pr-pictures img {
+  max-height: 90px;
+  border-radius: 6px;
+}
+.pr-warn,
+.pr-notice {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.pr-warn {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+}
+.pr-notice {
+  margin-bottom: 8px;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+}
+
+/* ---- mobile time navigation ---- */
+.m-nav-btn {
+  position: fixed;
+  top: 8px;
+  right: calc(var(--units-width) + 12px);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #1f2937;
+  color: #fff;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.4);
+  cursor: pointer;
+  transition: opacity 0.15s, visibility 0.15s;
+}
+/* shown only once the language switcher, which sits in the same corner, has scrolled away */
+.m-nav-btn.m-nav-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.m-nav-btn svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.nav-modal {
+  position: relative;
+  width: min(360px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 0 6px;
+  border-radius: 8px;
+  background: #fff;
+}
+.nav-modal h2 {
+  margin: 0 40px 8px 16px;
+  font-size: 17px;
+  color: #1f2937;
+}
+.nav-modal ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nav-modal li + li {
+  border-top: 1px solid #eef1f5;
+}
+.nav-link {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+.nav-link:active {
+  background: #eef1f5;
+}
+.nav-time {
+  flex: 0 0 5.2em;
+  color: #55606e;
+  font-variant-numeric: tabular-nums;
+}
+.nav-title {
+  font-weight: 600;
+  color: #1f2937;
 }

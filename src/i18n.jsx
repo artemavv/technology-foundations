@@ -46,6 +46,18 @@ export function LangProvider({ children }) {
     if (lang) document.documentElement.lang = lang
   }, [lang])
 
+  // Keep ?lang= in the address bar equal to the language shown, so that copying
+  // the URL (or a card title's link) shares the language. replaceState adds no
+  // history entry and leaves the other parameters and the #anchor alone. Only the
+  // switcher remembers a choice: following a shared link does not.
+  useEffect(() => {
+    if (!lang) return
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('lang') === lang) return
+    url.searchParams.set('lang', lang)
+    window.history.replaceState(window.history.state, '', url)
+  }, [lang])
+
   const value = useMemo(() => {
     if (!lang) return null
     const def = languages[0].code
