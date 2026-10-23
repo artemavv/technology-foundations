@@ -317,6 +317,15 @@ export default function adminApi({ login, password }) {
   const sentCredentials = (req) =>
     Boolean(req.headers['x-admin-login'] || req.headers['x-admin-password'])
 
+  // Behind a local reverse proxy the socket address is the proxy's: then take the
+  // client from the last X-Forwarded-For entry, the one the proxy itself appended.
+  const clientIp = (req) => {
+    const addr = req.socket.remoteAddress ?? '?'
+    if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(addr)) return addr
+    const forwarded = String(req.headers['x-forwarded-for'] ?? '').split(',').pop().trim()
+    return forwarded || addr
+  }
+
   const tooMany = (ip) => {
     const now = Date.now()
     const recent = (submissions.get(ip) ?? []).filter((t) => now - t < SUBMIT_LIMIT.windowMs)
@@ -399,7 +408,7 @@ export default function adminApi({ login, password }) {
     if (req.method === 'POST' && url === '/api/cards') {
       // anonymous is fine; credentials that were sent must be valid
       if (sentCredentials(req) && !admin) return deny(res)
-      if (!admin && tooMany(req.socket.remoteAddress ?? '?')) {
+      if (!admin && tooMany(clientIp(req))) {
         return send(res, 429, { error: 'Too many submissions, try again later' })
       }
       const parsed = await parse(req, res)
