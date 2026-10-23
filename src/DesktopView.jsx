@@ -5,6 +5,7 @@ import TimelineBar from './components/TimelineBar.jsx'
 import UnitsBar from './components/UnitsBar.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import LangSwitcher from './components/LangSwitcher.jsx'
+import TimeNavMenu from './components/TimeNavMenu.jsx'
 import { useLang } from './i18n.jsx'
 import EditModal from './components/EditModal.jsx'
 import { adminCredentials, fetchPending, verifyAdmin } from './admin.js'
@@ -12,6 +13,8 @@ import { formatAge } from './format.js'
 import { anchorTarget } from './anchors.js'
 import { loadSpecialCards } from './specialCards.js'
 import { CARD_WIDTH, END_MYA, SCARD_WIDTH, START_X, layoutTimeline } from './timeScale.js'
+
+const NAV_JUMP_X = 100 // where the menu puts the card, from the left of the stage
 
 export default function DesktopView() {
   const { t } = useLang()
@@ -24,6 +27,7 @@ export default function DesktopView() {
   )
   const [blocks, setBlocks] = useState([])
   const [cats, setCats] = useState({})
+  const [nav, setNav] = useState([]) // time navigation entries: [{ card: id, title }]
   // the Tech Units sidebar is hidden unless the page was loaded with ?tf=on
   const sidebarEnabled = new URLSearchParams(window.location.search).get('tf') === 'on'
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -79,14 +83,17 @@ export default function DesktopView() {
       // the sidebar is optional: a missing file just means no blocks
       fetch('/data/blocks.json').then((r) => r.json()).catch(() => []),
       fetch('/data/cats.json').then((r) => r.json()).catch(() => ({})),
+      // optional, like on the phone: a missing file means no menu button
+      fetch('/data/nav.json').then((r) => r.json()).catch(() => []),
       loadSpecialCards(),
-    ]).then(([cardData, unitData, blockData, catData, specialData]) => {
+    ]).then(([cardData, unitData, blockData, catData, navData, specialData]) => {
       if (!cancelled) {
         setScards(specialData)
         setCards(cardData)
         setUnits(unitData)
         setBlocks(blockData)
         setCats(catData)
+        setNav(Array.isArray(navData) ? navData : [])
       }
     })
     return () => {
@@ -182,6 +189,28 @@ export default function DesktopView() {
     el.scrollLeft = Math.max(0, x - START_X)
   }
 
+  // the menu's jump: the card goes to the left of the stage, even if it is already on
+  // screen, but far enough in for its date label to clear the menu button
+  const goTo = (id) => {
+    const x = positioned.find((c) => c.id === id)?.x
+    if (x === undefined) return
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    scrollRef.current?.scrollTo({ left: Math.max(0, x - NAV_JUMP_X), behavior: calm ? 'auto' : 'smooth' })
+  }
+  // navigation entries whose card exists
+  const navItems = nav
+    .map((entry) => ({ title: entry.title, card: cards.find((c) => c.id === entry.card) }))
+    .filter((entry) => entry.card)
+  // the entry on screen: the last one whose card has reached the scroll position a jump
+  // gives it (the end of the timeline limits how far a jump can scroll)
+  const maxScroll = scrollRef.current ? scrollRef.current.scrollWidth - scrollRef.current.clientWidth : Infinity
+  const current = navItems
+    .filter(({ card }) => {
+      const x = positioned.find((c) => c.id === card.id)?.x
+      return x !== undefined && scrollLeft >= Math.min(x - NAV_JUMP_X, maxScroll) - 2
+    })
+    .pop()?.card.id
+
   return (
     <div className={`app${sidebarOpen ? ' sidebar-open' : ''}`}>
       <div className="main">
@@ -263,6 +292,7 @@ export default function DesktopView() {
       />
       </div>
       <LangSwitcher />
+      <TimeNavMenu items={navItems} onGo={goTo} current={current} />
       {!sidebarEnabled ? null : sidebarOpen ? (
         <Sidebar
           blocks={blocks}

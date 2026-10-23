@@ -1153,8 +1153,9 @@ body,
   color: #065f46;
 }
 
-/* ---- mobile time navigation ---- */
-.m-nav-btn {
+/* ---- time navigation ---- */
+.m-nav-btn,
+.d-nav-btn {
   position: fixed;
   top: 8px;
   right: calc(var(--units-width) + 12px);
@@ -1173,13 +1174,19 @@ body,
   cursor: pointer;
   transition: opacity 0.15s, visibility 0.15s;
 }
+/* desktop: top left corner, opposite the language switcher */
+.d-nav-btn {
+  right: auto;
+  left: 10px;
+}
 /* shown only once the language switcher, which sits in the same corner, has scrolled away */
 .m-nav-btn.m-nav-hidden {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
-.m-nav-btn svg {
+.m-nav-btn svg,
+.d-nav-btn svg {
   width: 17px;
   height: 17px;
   fill: none;
@@ -1224,8 +1231,17 @@ body,
   text-align: left;
   cursor: pointer;
 }
+.nav-link:hover,
 .nav-link:active {
   background: #eef1f5;
+}
+/* the part of the timeline on screen */
+.nav-link.nav-current {
+  background: #e3edfd;
+  box-shadow: inset 3px 0 0 #2563eb;
+}
+.nav-link.nav-current .nav-time {
+  color: #1d4ed8;
 }
 .nav-time {
   flex: 0 0 5.2em;
@@ -1235,4 +1251,33 @@ body,
 .nav-title {
   font-weight: 600;
   color: #1f2937;
+}
+
+/* desktop time navigation menu: a panel over the left edge, below the timeline bar */
+.nav-menu {
+  position: fixed;
+  top: var(--bar-height);
+  left: 0;
+  bottom: 0;
+  z-index: 55;
+  width: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 0 6px;
+  border-top: 1px solid #d8dce2;
+  border-right: 1px solid #d8dce2;
+  background: #fff;
+}
+.nav-menu h2 {
+  margin: 0 16px 8px;
+  font-size: 17px;
+  color: #1f2937;
+}
+.nav-menu ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.nav-menu li + li {
+  border-top: 1px solid #eef1f5;
 }

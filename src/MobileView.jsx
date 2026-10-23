@@ -202,6 +202,8 @@ export default function MobileView() {
     .map((entry) => ({ title: entry.title, card: cards.find((c) => c.id === entry.card) }))
     .filter((entry) => entry.card)
   const mya = myaAt(anchors, scrollY + viewportHeight * COUNTER_LINE)
+  // the entry on screen: the last one whose card is not newer than the date at the counter line
+  const current = mya === null ? undefined : navItems.filter((n) => n.card.mya >= mya * (1 - 1e-6)).pop()?.card.id
   // the counter takes the color of the eon/era on screen; before the first one it stays light blue
   const unit = mya === null ? null : railUnits(units).find((u) => mya <= u.startMya && mya > u.endMya)
 
@@ -211,7 +213,7 @@ export default function MobileView() {
         <h1>{t('siteTitle')}</h1>
         <LangSwitcher />
       </header>
-      <TimeNav items={navItems} onGo={goTo} shown={switcherGone} />
+      <TimeNav items={navItems} onGo={goTo} shown={switcherGone} current={current} />
       {mya !== null && scrollY >= COUNTER_MIN_SCROLL && (
         <div
           className="m-counter"

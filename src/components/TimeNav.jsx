@@ -1,12 +1,42 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLang } from '../i18n.jsx'
 
+// The jump list shared by the phone modal and the desktop menu. `current` is
+// the id of the entry for the part of the timeline on screen; it is highlighted
+// and, when the list opens, brought into view.
+export function NavList({ items, onPick, current }) {
+  const { pick } = useLang()
+  const currentRef = useRef(null)
+  useEffect(() => {
+    currentRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [])
+  return (
+    <ul>
+      {items.map(({ title, card }) => (
+        <li key={card.id}>
+          <button
+            type="button"
+            className={`nav-link${card.id === current ? ' nav-current' : ''}`}
+            aria-current={card.id === current ? 'location' : undefined}
+            ref={card.id === current ? currentRef : undefined}
+            onClick={() => onPick(card.id)}
+          >
+            <span className="nav-time">{card.time}</span>
+            <span className="nav-title">{pick(title)}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 // Mobile time navigation: a small circle button; opens a list of jump points,
 // each the date of a card with a short title. `items` = [{ title, card }];
-// `onGo(cardId)` scrolls to the card. The button is hidden unless `shown`.
-export default function TimeNav({ items, onGo, shown }) {
-  const { pick, t } = useLang()
+// `onGo(cardId)` scrolls to the card; `current` is the id of the entry on screen.
+// The button is hidden unless `shown`.
+export default function TimeNav({ items, onGo, shown, current }) {
+  const { t } = useLang()
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -46,23 +76,14 @@ export default function TimeNav({ items, onGo, shown }) {
               <button type="button" className="sources-close" aria-label={t('close')} onClick={() => setOpen(false)}>
                 ×
               </button>
-              <ul>
-                {items.map(({ title, card }) => (
-                  <li key={card.id}>
-                    <button
-                      type="button"
-                      className="nav-link"
-                      onClick={() => {
-                        setOpen(false)
-                        onGo(card.id)
-                      }}
-                    >
-                      <span className="nav-time">{card.time}</span>
-                      <span className="nav-title">{pick(title)}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <NavList
+                items={items}
+                current={current}
+                onPick={(id) => {
+                  setOpen(false)
+                  onGo(id)
+                }}
+              />
             </div>
           </div>,
           document.body,
