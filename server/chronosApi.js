@@ -4,6 +4,7 @@
 //   POST   /api/admin/chronos              admin: { title: {lang: text}, cardId? | date? }
 //   PUT    /api/admin/chronos/:id          admin: same body
 //   DELETE /api/admin/chronos/:id          admin
+//   GET    /api/chronos                    anyone: { chronos } the global ones (no selection; visitors keep that in the browser)
 //   GET    /api/memory                     user: { chronos: global (with `selected`), personal }
 //   PUT    /api/me/selected/:chronoId      user: put a global chronos on the memory line
 //   DELETE /api/me/selected/:chronoId      user: take it off
@@ -247,6 +248,17 @@ const personalRow = (db, id, userId) =>
   db.prepare(`SELECT c.*, ${KNOWN} FROM chronos c WHERE c.id = ? AND c.owner_id = ?`).get(userId, id, userId)
 
 export async function memoryRoutes(ctx, req, res, url) {
+  // the global chronos for visitors without an account, who keep their selection in the browser
+  if (url === '/api/chronos' && req.method === 'GET') {
+    const cards = cardMap(await ctx.loadCards())
+    const chronos = ctx.db
+      .prepare('SELECT * FROM chronos WHERE owner_id IS NULL')
+      .all()
+      .map((r) => shapeGlobal(r, cards))
+      .sort(byAge)
+    send(res, 200, { chronos })
+    return true
+  }
   const isMemory = url === '/api/memory'
   const known = url.match(/^\/api\/me\/known\/(\d+)$/)
   const selected = url.match(/^\/api\/me\/selected\/(\d+)$/)

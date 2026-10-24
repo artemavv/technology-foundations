@@ -2,12 +2,15 @@
 // the user types a number and picks a unit (Gya / Mya / Kya / BC), then checks it;
 // Enter on an empty field just shows the answer: recorded as skipped, which is neither
 // correct nor incorrect and stays out of the score.
-// Every answer is recorded in a training run (server/trainingApi.js), which is
-// finished at the end or with the Finish button, so each run updates the statistics.
+// Every answer is recorded in a training run (server/trainingApi.js, or the browser's
+// storage for a visitor without an account: memoryStore.js), which is finished at the
+// end or with the Finish button, so each run updates the statistics.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api, useUser } from './auth.js'
+import { useUser } from './auth.js'
 import LangSwitcher from './components/LangSwitcher.jsx'
+import SiteHeading from './components/SiteHeading.jsx'
 import { useLang } from './i18n.jsx'
+import { storeFor } from './memoryStore.js'
 import { AUTO_NEXT_MS, TOLERANCE, UNITS, YEARS_ABOVE, cleanNumber, isClose, shuffle, toMya } from './training.js'
 
 export default function TrainPage() {
@@ -27,6 +30,7 @@ export default function TrainPage() {
   const startedRef = useRef(false)
   const shownAt = useRef(0) // when the current question appeared
   const saving = useRef(Promise.resolve()) // answers are saved in order; finishing waits for them
+  const store = storeFor(user)
   const buttonRef = useRef(null)
   const unitRefs = useRef([])
 
@@ -45,8 +49,8 @@ export default function TrainPage() {
     setResult(null)
     setAnswered(0)
     try {
-      const started = await api('POST', '/api/training/runs', {})
-      setRun({ id: started.id, chronos: shuffle(started.chronos) })
+      const started = await store.startRun()
+      setRun({ ...started, chronos: shuffle(started.chronos) })
       shownAt.current = Date.now()
     } catch (err) {
       if (err.code === 'all_known') setAllKnown(true)
@@ -54,20 +58,15 @@ export default function TrainPage() {
       else setError(err.message)
     }
     setBusy(false)
-  }, [])
+  }, [store])
 
   // started once per visit; the ref keeps StrictMode's second effect run from starting another run
   useEffect(() => {
     if (loading) return
-    if (!user) {
-      const next = encodeURIComponent(window.location.pathname + window.location.search)
-      window.location.replace(`/login.html?next=${next}`)
-      return
-    }
     if (startedRef.current) return
     startedRef.current = true
     start()
-  }, [loading, user, start])
+  }, [loading, start])
 
   const current = run?.chronos[index]
   const isLast = run && index === run.chronos.length - 1
@@ -94,7 +93,7 @@ export default function TrainPage() {
       answer: skipped ? { skipped: true } : { value: number, unit: usedUnit },
     }
     saving.current = saving.current
-      .then(() => api('POST', `/api/training/runs/${run.id}/answers`, { answers: [answer] }))
+      .then(() => store.saveAnswer(run, answer))
       .catch((err) => setError(err.message))
   }
 
@@ -103,7 +102,7 @@ export default function TrainPage() {
     setError('')
     try {
       await saving.current
-      setSummary(await api('POST', `/api/training/runs/${run.id}/finish`, {}))
+      setSummary(await store.finishRun(run))
     } catch (err) {
       setError(err.message)
     }
@@ -133,7 +132,7 @@ export default function TrainPage() {
     setBusy(true)
     setError('')
     try {
-      await api('PUT', `/api/me/known/${current.id}`)
+      await store.setKnown(current.id, true)
     } catch (err) {
       setError(err.message)
       setBusy(false)
@@ -175,15 +174,14 @@ export default function TrainPage() {
 
   const header = (
     <header className="tr-header">
-      <h1>{t('trainTitle')}</h1>
+      <SiteHeading sub={t('trainTitle')} />
       <div className="memory-account">
         <a href={`/my-chronos.html?lang=${lang}`}>{t('myChronos')}</a>
-        <a href={`/memory.html?lang=${lang}`}>{t('memoryLine')}</a>
       </div>
     </header>
   )
 
-  if (loading || !user) return <p className="loading">{t('loading')}</p>
+  if (loading) return <p className="loading">{t('loading')}</p>
   return (
     <div className="tr-page memory-page">
       <LangSwitcher />

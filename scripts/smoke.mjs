@@ -141,6 +141,10 @@ async function run() {
   // ---- memory line ----
   r = await anon('GET', '/api/memory')
   check('memory needs a session', r.status === 401, r.status)
+  r = await anon('GET', '/api/chronos')
+  check('anyone can list the global chronos', r.status === 200 && r.body.chronos.length > 0 && r.body.chronos.every((c) => !c.personal && !c.selected && !('known' in c)), r.status)
+  r = await anon('POST', '/api/chronos', {})
+  check('the public chronos list is read-only', r.status === 404, r.status)
   r = await alice('GET', '/api/memory')
   check('memory lists the global chronos, none selected', r.status === 200 && r.body.chronos.length > 0 && r.body.chronos.every((c) => !c.selected))
   const ages = r.body.chronos.map((c) => c.mya)

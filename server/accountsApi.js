@@ -41,7 +41,7 @@ const FAILED_LOGIN_NAME = { count: 5, windowMs: 15 * 60 * 1000 }
 const REGISTER_LIMIT = { count: 5, windowMs: 60 * 60 * 1000 } // per IP
 
 // everything this plugin answers; /api/admin/check and the card routes stay with adminApi
-const OURS = /^\/api\/(auth|me|memory|training|admin\/users|admin\/chronos)(\/|$)/
+const OURS = /^\/api\/(auth|me|memory|chronos|training|admin\/users|admin\/chronos)(\/|$)/
 
 const userJson = (r) => ({
   id: r.id,

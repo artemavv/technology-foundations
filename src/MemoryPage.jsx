@@ -1,28 +1,32 @@
-// Memory line: every chrono (a date with a short title), oldest first. A signed-in
-// user puts chronos on their own memory line, adds chronos of their own, and trains
-// on their memory line. With `mine` (the My chronos page) only the user's own memory
+// Memory line: every chrono (a date with a short title), oldest first. A visitor puts
+// chronos on their own memory line and trains on it; a signed-in user's memory line is
+// kept on the server and they can add chronos of their own, a visitor's is kept in the
+// browser (memoryStore.js) and holds global chronos only. With `mine` (the My chronos page) only the user's own memory
 // line is listed: the chronos they put on it plus their own.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, logout, useUser } from './auth.js'
 import AdminNav from './components/AdminNav.jsx'
 import CardModal from './components/CardModal.jsx'
+import SiteHeading from './components/SiteHeading.jsx'
 import ChronoModal from './components/ChronoModal.jsx'
 import LangSwitcher from './components/LangSwitcher.jsx'
 import { useLang } from './i18n.jsx'
+import { storeFor } from './memoryStore.js'
 
 const byAge = (a, b) => b.mya - a.mya || a.id - b.id
 
 // `mine`: on the My chronos page every row is on the user's memory line, so there is no
 // toggle (and no highlight); a chrono is taken off with a Remove button on the right, and
-// can be marked as known (left out of training) with the green tick toggle
-const Tick = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
+// can be marked as known (left out of training) with the green box on the far left
 const Trash = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+  </svg>
+)
+
+const Pencil = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19l-4 1zM14 7l3 3" />
   </svg>
 )
 
@@ -45,6 +49,19 @@ function Row({ chrono, mine, busy, onToggle, onKnown, onEdit, onDelete, onOpenCa
         </button>
       )}
       {!mine && chrono.personal && <span className="chrono-toggle chrono-own" aria-hidden="true">★</span>}
+      {mine && (
+        <button
+          type="button"
+          className="memory-known-btn"
+          aria-pressed={chrono.known}
+          aria-label={t(chrono.known ? 'memoryUnmarkKnown' : 'memoryMarkKnown', title)}
+          title={t(chrono.known ? 'memoryUnmarkKnown' : 'memoryMarkKnown', title)}
+          onClick={() => onKnown(chrono)}
+          disabled={busy}
+        >
+          <span aria-hidden="true">{'\u039E'}</span>
+        </button>
+      )}
       <span className="nav-time">{chrono.time}</span>
       <span className="memory-text">
         {chrono.cardId ? (
@@ -61,40 +78,53 @@ function Row({ chrono, mine, busy, onToggle, onKnown, onEdit, onDelete, onOpenCa
               <path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
+        ) : chrono.personal ? (
+          // an own chrono has no card, so its icon slot holds the Edit button
+          <button
+            type="button"
+            className="memory-card memory-edit-btn"
+            aria-haspopup="dialog"
+            title={t('edit')}
+            aria-label={`${t('edit')}: ${title}`}
+            onClick={() => onEdit(chrono)}
+            disabled={busy}
+          >
+            <Pencil />
+          </button>
         ) : (
           <span className="memory-card-slot" aria-hidden="true" />
         )}
         <span className="memory-main">
-          <span className="nav-title">{title}</span>
+          {chrono.personal ? (
+            // the title of an own chrono opens the editor too (the pencil is the keyboard-friendly way in)
+            <span
+              className="nav-title memory-title-edit"
+              title={t('edit')}
+              onClick={() => !busy && onEdit(chrono)}
+            >
+              {title}
+            </span>
+          ) : (
+            <span className="nav-title">{title}</span>
+          )}
           {chrono.personal && <span className="tr-badge">{t('memoryMine')}</span>}
           {!mine && chrono.selected && chrono.known && <span className="tr-badge tr-badge-known">{t('memoryKnown')}</span>}
           {chrono.description && <span className="memory-description">{chrono.description}</span>}
         </span>
       </span>
       {(chrono.personal || mine) && (
-        <span className={`memory-actions${chrono.personal ? '' : ' memory-actions-inline'}`}>
-          {mine && (
+        <span className="memory-actions memory-actions-inline">
+          {chrono.personal ? (
             <button
               type="button"
-              className="memory-known-btn icon-btn"
-              aria-pressed={chrono.known}
-              aria-label={t(chrono.known ? 'memoryUnmarkKnown' : 'memoryMarkKnown', title)}
-              title={t(chrono.known ? 'memoryUnmarkKnown' : 'memoryMarkKnown', title)}
-              onClick={() => onKnown(chrono)}
+              className="icon-btn memory-delete-btn"
+              aria-label={`${t('memoryDelete')}: ${title}`}
+              title={`${t('memoryDelete')}: ${title}`}
+              onClick={() => onDelete(chrono)}
               disabled={busy}
             >
-              <Tick />
+              <Trash />
             </button>
-          )}
-          {chrono.personal ? (
-            <>
-              <button type="button" onClick={() => onEdit(chrono)} disabled={busy}>
-                {t('edit')}
-              </button>
-              <button type="button" className="danger" onClick={() => onDelete(chrono)} disabled={busy}>
-                {t('memoryDelete')}
-              </button>
-            </>
           ) : (
             <button
               type="button"
@@ -121,6 +151,7 @@ export default function MemoryPage({ mine = false }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [shownCard, setShownCard] = useState(null)
+  const store = storeFor(user)
   const cardsRef = useRef(null) // cards.json, fetched when the first card is opened
 
   useEffect(() => {
@@ -129,15 +160,11 @@ export default function MemoryPage({ mine = false }) {
 
   useEffect(() => {
     if (loading) return
-    if (!user) {
-      const next = encodeURIComponent(window.location.pathname + window.location.search)
-      window.location.replace(`/login.html?next=${next}`)
-      return
-    }
-    api('GET', '/api/memory')
+    store
+      .load()
       .then(setData)
       .catch((err) => setError(err.status === 401 ? t('memorySessionEnded') : t('memoryLoadFailed')))
-  }, [loading, user, t])
+  }, [loading, store, t])
 
   const items = useMemo(() => {
     const all = [...(data?.chronos ?? []), ...(data?.personal ?? [])].sort(byAge)
@@ -163,7 +190,7 @@ export default function MemoryPage({ mine = false }) {
     setError('')
     setSelected(chrono.id, selected)
     try {
-      await api(selected ? 'PUT' : 'DELETE', `/api/me/selected/${chrono.id}`)
+      await store.setSelected(chrono.id, selected)
     } catch (err) {
       setSelected(chrono.id, !selected)
       setError(err.message)
@@ -180,7 +207,7 @@ export default function MemoryPage({ mine = false }) {
     setError('')
     setKnown(chrono, known)
     try {
-      await api(known ? 'PUT' : 'DELETE', `/api/me/known/${chrono.id}`)
+      await store.setKnown(chrono.id, known)
     } catch (err) {
       setKnown(chrono, !known)
       setError(err.message)
@@ -218,38 +245,53 @@ export default function MemoryPage({ mine = false }) {
     }
   }
 
-  if (loading || !user) return <p className="loading">{t('loading')}</p>
+  if (loading) return <p className="loading">{t('loading')}</p>
   return (
     <div className="tr-page memory-page">
       <LangSwitcher />
       <header className="tr-header">
-        <h1>{t(mine ? 'myChronos' : 'memoryLine')}</h1>
-        {user.isAdmin && <AdminNav />}
+        <SiteHeading sub={mine ? t('myChronos') : undefined} />
+        {user?.isAdmin && <AdminNav />}
         <div className="memory-account">
-          <a href={`/?lang=${lang}`}>{t('memoryBackToTimeline')}</a>
-          <span>{user.login}</span>
-          <button type="button" onClick={() => logout().then(() => window.location.assign('/login.html'))}>
-            {t('accountLogOut')}
-          </button>
+          {!mine && <a href={`/my-chronos.html?lang=${lang}`}>{t('myChronos')}</a>}
+          {user ? (
+            <>
+              <span>{user.login}</span>
+              <button type="button" onClick={() => logout().then(() => window.location.assign('/login.html'))}>
+                {t('accountLogOut')}
+              </button>
+            </>
+          ) : (
+            <a href={`/login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}>
+              {t('accountLogIn')}
+            </a>
+          )}
         </div>
       </header>
       <div className="memory-toolbar">
-        <a className="memory-sublink" href={`/${mine ? 'memory' : 'my-chronos'}.html?lang=${lang}`}>
-          {t(mine ? 'memoryLine' : 'myChronos')}
-        </a>
-        <button type="button" onClick={() => setModal({})}>
-          {t('memoryAdd')}
-        </button>
-        <button
-          type="button"
-          className="primary"
-          disabled={trainCount === 0}
-          title={trainCount === 0 ? t(mineCount === 0 ? 'memoryTrainEmpty' : 'memoryTrainAllKnown') : undefined}
-          onClick={() => window.location.assign(`/train.html?lang=${lang}`)}
-        >
-          {t('memoryTrain', trainCount)}
-        </button>
+        {data && trainCount > 0 ? (
+          <a className="memory-train-btn" href={`/train.html?lang=${lang}`}>
+            {t('trainStart')}
+          </a>
+        ) : (
+          // nothing to train on: a disabled button, and the tooltip says why
+          <button
+            type="button"
+            className="memory-train-btn"
+            disabled
+            title={data ? t(mineCount === 0 ? 'memoryTrainEmpty' : 'memoryTrainAllKnown') : undefined}
+          >
+            {t('trainStart')}
+          </button>
+        )}
+        {user && (
+          <button type="button" onClick={() => setModal({})}>
+            {t('memoryAdd')}
+          </button>
+        )}
       </div>
+      {!user && <p className="memory-note">{t('memoryGuestNote')}</p>}
+      {mine && items.length > 0 && <p className="memory-note">{t('memoryKnownNote')}</p>}
       {error && <p className="edit-error" role="alert">{error}</p>}
       {!data && !error && <p className="loading">{t('loading')}</p>}
       {data && items.length === 0 && (
