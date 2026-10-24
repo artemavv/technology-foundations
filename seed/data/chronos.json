@@ -1,0 +1,58 @@
+[
+  {
+    "card": "big-bang",
+    "title": { "en": "Big Bang", "ru": "Большой взрыв", "it": "Big Bang", "de": "Urknall", "es": "Big Bang" }
+  },
+  {
+    "card": "first-stars",
+    "title": { "en": "First stars", "ru": "Первые звёзды", "it": "Prime stelle", "de": "Erste Sterne", "es": "Primeras estrellas" }
+  },
+  {
+    "card": "earth-forms",
+    "title": { "en": "Earth forms", "ru": "Образование Земли", "it": "Nasce la Terra", "de": "Entstehung der Erde", "es": "Se forma la Tierra" }
+  },
+  {
+    "card": "moon-forms",
+    "title": { "en": "Moon forms", "ru": "Образование Луны", "it": "Nasce la Luna", "de": "Entstehung des Mondes", "es": "Se forma la Luna" }
+  },
+  {
+    "card": "first-life",
+    "title": { "en": "First life", "ru": "Первая жизнь", "it": "Prima vita", "de": "Erstes Leben", "es": "Primera vida" }
+  },
+  {
+    "card": "cambrian-explosion",
+    "title": { "en": "Cambrian explosion", "ru": "Кембрийский взрыв", "it": "Esplosione cambriana", "de": "Kambrische Explosion", "es": "Explosión cámbrica" }
+  },
+  {
+    "card": "tiktaalik",
+    "title": { "en": "Tiktaalik", "ru": "Тиктаалик", "it": "Tiktaalik", "de": "Tiktaalik", "es": "Tiktaalik" }
+  },
+  {
+    "card": "dinosaurs",
+    "title": { "en": "Dinosaurs", "ru": "Динозавры", "it": "Dinosauri", "de": "Dinosaurier", "es": "Dinosaurios" }
+  },
+  {
+    "card": "control-of-fire",
+    "title": { "en": "Control of fire", "ru": "Овладение огнём", "it": "Dominio del fuoco", "de": "Beherrschung des Feuers", "es": "Dominio del fuego" }
+  },
+  {
+    "card": "agriculture",
+    "title": { "en": "Agriculture", "ru": "Земледелие", "it": "Agricoltura", "de": "Landwirtschaft", "es": "Agricultura" }
+  },
+  {
+    "card": "writing",
+    "title": { "en": "Writing", "ru": "Письменность", "it": "Scrittura", "de": "Schrift", "es": "Escritura" }
+  },
+  {
+    "date": "66 Mya",
+    "title": { "en": "Dinosaurs die out", "ru": "Вымирание динозавров", "it": "Estinzione dei dinosauri", "de": "Dinosaurier sterben aus", "es": "Extinción de los dinosaurios" }
+  },
+  {
+    "date": "300 Kya",
+    "title": { "en": "Homo sapiens appears", "ru": "Появление Homo sapiens", "it": "Appare Homo sapiens", "de": "Homo sapiens erscheint", "es": "Aparece el Homo sapiens" }
+  },
+  {
+    "date": "2600 BC",
+    "title": { "en": "Great Pyramid of Giza", "ru": "Великая пирамида в Гизе", "it": "Grande Piramide di Giza", "de": "Cheops-Pyramide", "es": "Gran Pirámide de Guiza" }
+  }
+]

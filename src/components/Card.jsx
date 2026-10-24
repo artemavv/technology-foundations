@@ -83,7 +83,7 @@ function ZoomModal({ files, alt, onClose }) {
 const MOBILE_TOP_CLEARANCE = 56 // px kept free above a card scrolled back into view: the date counter and buttons
 
 // Renders just the card; the view supplies the positioning wrapper.
-function Card({ card, creds, onSaved, onDeleted, sourcesModal = false, mobile = false }) {
+function Card({ card, admin, onSaved, onDeleted, sourcesModal = false, mobile = false }) {
   const { pick, has, def, languages, lang, wikiHref, t } = useLang()
   const title = pick(card.title)
   const defLabel = languages.find((l) => l.code === def)?.label ?? def
@@ -307,7 +307,7 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false, mobile = 
             S
           </button>
         )}
-        {creds && (
+        {admin && (
           <button
             type="button"
             className="card-icon"
@@ -335,7 +335,7 @@ function Card({ card, creds, onSaved, onDeleted, sourcesModal = false, mobile = 
       {editing && (
         <EditModal
           card={card}
-          creds={creds}
+          admin={admin}
           onSaved={onSaved}
           onDeleted={onDeleted}
           onClose={() => setEditing(false)}

@@ -4,11 +4,13 @@ import SpecialCard from './components/SpecialCard.jsx'
 import TimelineBar from './components/TimelineBar.jsx'
 import UnitsBar from './components/UnitsBar.jsx'
 import Sidebar from './components/Sidebar.jsx'
+import AccountLink from './components/AccountLink.jsx'
 import LangSwitcher from './components/LangSwitcher.jsx'
 import TimeNavMenu from './components/TimeNavMenu.jsx'
 import { useLang } from './i18n.jsx'
 import EditModal from './components/EditModal.jsx'
-import { adminCredentials, fetchPending, verifyAdmin } from './admin.js'
+import { fetchPending } from './admin.js'
+import { useAdmin } from './auth.js'
 import { formatAge } from './format.js'
 import { anchorTarget } from './anchors.js'
 import { loadSpecialCards, startIndex } from './specialCards.js'
@@ -42,23 +44,17 @@ export default function DesktopView() {
   const [mouseX, setMouseX] = useState(null) // pointer x within the stage, or null
   const [pending, setPending] = useState([])
   const [adding, setAdding] = useState(false)
-  const [creds, setCreds] = useState(null)
+  const admin = useAdmin() === true
   const scrollRef = useRef(null)
   const cursorMyaRef = useRef(null) // last age under the cursor line
   const [measured, setMeasured] = useState(false) // the stage width is known, so card positions are final
   const jumpedRef = useRef(false) // the URL's anchor was handled on load
   const jumpRef = useRef(null) // scrolls to the card named by the URL's anchor; set on every render
 
-  // admin = login/password GET params that the server accepts
+  // pending cards are visible to admins only
   useEffect(() => {
-    const c = adminCredentials()
-    if (!c) return
-    verifyAdmin(c).then((ok) => {
-      if (!ok) return
-      setCreds(c)
-      fetchPending(c).then(setPending) // pending cards are visible to admins only
-    })
-  }, [])
+    if (admin) fetchPending().then(setPending).catch(() => {})
+  }, [admin])
 
   const positionedCache = useRef(new Map()) // see `positioned` below
   const onDeleted = useCallback((id) => {
@@ -261,7 +257,7 @@ export default function DesktopView() {
               <div className="card-col" key={card.id} style={{ left: card.x }}>
                 <Card
                   card={card}
-                  creds={creds}
+                  admin={admin}
                   onSaved={onSaved}
                   onDeleted={onDeleted}
                 />
@@ -290,7 +286,7 @@ export default function DesktopView() {
       {adding && (
         <EditModal
           card={null}
-          creds={creds}
+          admin={admin}
           onSaved={onSaved}
           onClose={() => setAdding(false)}
         />
@@ -302,6 +298,7 @@ export default function DesktopView() {
         mapTime={mapTime}
       />
       </div>
+      <AccountLink />
       <LangSwitcher />
       <TimeNavMenu items={navItems} onGo={goTo} current={current} />
       {!sidebarEnabled ? null : sidebarOpen ? (
@@ -309,7 +306,7 @@ export default function DesktopView() {
           blocks={blocks}
           cats={cats}
           cursorKya={cursorMya === null ? null : cursorMya * 1000}
-          creds={creds}
+          admin={admin}
           onAdded={(b) => setBlocks((prev) => [...prev, b])}
           onClose={() => setSidebar(false)}
         />

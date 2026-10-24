@@ -33,24 +33,23 @@ Sample content is placed in `seed/` .
 
 ## Admin access
 
-Set credentials in `.env.local` (git-ignored; the server reads them, the browser never does):
+An admin is an account with the admin flag, signed in on `/login.html` like any user (the session is an HttpOnly cookie). Admin accounts are never created by registration; create one, or reset its password, on the machine that holds the database:
 
 ```
-ADMIN_LOGIN=your-login
-ADMIN_PASSWORD=your-password
+npm run create-admin -- <login> <password>
 ```
 
-Open the site with `?login=your-login&password=your-password` in the URL. In Edim mode every card shows an **E** icon that opens edit form. Saving rewrites `public/data/cards.json`. With no credentials configured, the admin API is off.
+(`node scripts/create-admin.js`; it uses `data/app.db`, or `$DB_PATH`.) Choose a strong password: the command accepts any, and warns below 6 characters. Admin accounts are not listed on the accounts page and cannot be deleted or revoked there. When signed in as an admin, every card shows an **E** icon that opens the edit form. Saving rewrites `public/data/cards.json`.
 
-The API (`server/adminApi.js`) is a Vite plugin, so it runs under `npm run dev` and `npm run preview`. Credentials in a URL end up in browser history and server logs, so use this only on a trusted machine or network.
+The API (`server/adminApi.js`, with the sessions in `server/accountsApi.js`) is a Vite plugin, so it runs under `npm run dev` and `npm run preview`. The old `ADMIN_LOGIN` / `ADMIN_PASSWORD` variables and the `?login=&password=` URL parameters are no longer used; remove them from `.env.local`.
 
 ## Translation management page
 
-With the same `login` and `password` parameters, open `/translations.html` (e.g. `http://localhost:5173/translations.html?login=…&password=…`). It lists all published cards, oldest first, in two columns: a source language and a translation language, chosen in the dropdowns at the top (picking the language already chosen in the other dropdown swaps them). **Edit** under a row turns it into two side-by-side forms with a single **Save**. Title, description and Wikipedia link are edited per language; the date, sources and pictures are shared by all languages, so they are editable in the source form only. Pending cards are not listed. Each non-default language of a card has a translation status, **Completed** or **Pending**, set in its form; pending translations are shown with a light yellow background. English (the default language) is always completed. It is stored as `"langStatus": { "ru": "pending" }` on the card; a language without an entry is completed, so existing data needs no change, and a language with no text has no status. The status only marks the work for admins; the public site shows pending translations like any other. Like the rest of the admin API, it works under `npm run dev` and `npm run preview`.
+As a signed-in admin, open `/translations.html`. It lists all published cards, oldest first, in two columns: a source language and a translation language, chosen in the dropdowns at the top (picking the language already chosen in the other dropdown swaps them). **Edit** under a row turns it into two side-by-side forms with a single **Save**. Title, description and Wikipedia link are edited per language; the date, sources and pictures are shared by all languages, so they are editable in the source form only. Pending cards are not listed. Each non-default language of a card has a translation status, **Completed** or **Pending**, set in its form; pending translations are shown with a light yellow background. English (the default language) is always completed. It is stored as `"langStatus": { "ru": "pending" }` on the card; a language without an entry is completed, so existing data needs no change, and a language with no text has no status. The status only marks the work for admins; the public site shows pending translations like any other. Like the rest of the admin API, it works under `npm run dev` and `npm run preview`.
 
 ## Proposals page
 
-With the same `login` and `password` parameters, open `/proposals.html` (e.g. `http://localhost:5173/proposals.html?login=…&password=…`). It lists the cards proposed by visitors (stored as pending in `data/pending.json`), newest first, each with its date, submission time, text, Wikipedia link, sources and pictures. For each proposal an admin can:
+As a signed-in admin, open `/proposals.html`. It lists the cards proposed by visitors (stored as pending in `data/pending.json`), newest first, each with its date, submission time, text, Wikipedia link, sources and pictures. For each proposal an admin can:
 
 - **Approve**: publish it as it is; it then appears on the timeline and on the translations page.
 - **Edit**: change the date, sources, pictures and, per language, the title, description and Wikipedia link. Visitors write in the language they are viewing, so the editor also offers the default language to add the missing text; a warning shows while a proposal has none. **Save** keeps it pending, **Approve** saves and publishes.
@@ -73,6 +72,20 @@ They live in `public/data/scards.json` (sample in `seed/data/`), with the same p
 
 A missing file, or a card without any text, simply leaves that card out. `before` is optional: the id of the card the opening card goes before (here the 1 Mya card, so it also comes before that card's date marking on phones); without it, or if no such card exists, the opening card is the very first item. The oldest tick (13.8 Gya) then sits on the first card, and the newest one (2500 BC) follows the closing card. The special cards are edited on the translations page, which has a separate row for each (the opening one before the card it goes before, the closing one after the last card); saving there keeps `before` with a form for the title and description only. Behind it is `PUT /api/scards/start` or `/api/scards/end` (admin only).
 
+## User accounts and the Memory line
+
+Visitors can register with a login and a password. A new account is `pending` until an admin approves it; only approved accounts can log in. Sessions use an HttpOnly cookie (30 days); passwords are stored as scrypt hashes. Accounts, personal chronos and training statistics are kept in SQLite, in `data/app.db` (git-ignored, never served; set `DB_PATH` to use another file). The database is created and migrated automatically on the first account request. **Back up `data/app.db`** (it runs in WAL mode, so copy `app.db-wal` and `app.db-shm` along with it, or stop the server first). It needs the `better-sqlite3` package, a native module: `npm ci` normally downloads a prebuilt binary; if that fails on the server, install `build-essential` and `python3`. The Node version that runs the site must be the one `npm ci` was run with.
+
+- **Chronos** are short dated titles (a title per language and a date), a second set next to the cards. A chrono may be linked to a card and then follows the card's date; one without a card has a date of its own. Admins manage them on `/chronos.html`. On the first start with an empty database, `public/data/chronos.json` (sample: `seed/data/chronos.json`) is imported once; after that the database rules and the file is not read again. `npm run chronos-from-cards` (`scripts/chronos-from-cards.js`, `-- --dry-run` to only count) adds a chrono for every published card that has none yet, linked to the card and titled with the card's own title in every language it has; it is safe to run again, e.g. after new cards are published.
+- **Memory line** (`/memory.html`, for signed-in users): all chronos, oldest first. The **+** / **✓** button puts a chrono on, or takes it off, the user's own memory line. Users can also add chronos of their own (title, date, optional description; not linked to a card, visible only to them). The **My chronos** link opens a separate page (`/my-chronos.html`) with the user's own memory line only: the chronos they selected plus their own. A **Known** toggle on each row marks a chrono as known: it is shown dimmed there and left out of training (and out of the **Train (N)** count) until the toggle is switched off. Taking a chrono off the memory line forgets that it was known. **Train** starts training on that set.
+- **Training** (`/train.html`, the **Train** button): the user's own memory line, one chrono at a time in random order. Only the title is shown; the user types a number, picks a unit (**Gya**, **Mya**, **Kya** or **BC**) and presses **Check**. **Enter** on an empty number field shows the answer (the button then reads **Show answer**); it is recorded as skipped, which is neither correct nor incorrect: it is left out of the run's score and of the statistics (which report skipped ones separately), and the page moves on after 2 seconds, as after a correct answer. A comma works as the decimal point. If a wrong "years ago" answer would have been right as the same number of years BC (the two differ by 2000), a note under the result says so. A number above 2000 hides the unit buttons and reads "years ago": it is taken as a plain number of years (`YEARS_ABOVE` in `src/training.js`); at 2000 or less the buttons are back, with the unit chosen before. From the number field, **Tab** moves to the units, where the **←** / **→** keys change the selected unit and **Enter** checks. The right date is then shown, and an answer within 5 % of the real age counts as correct (`TOLERANCE` in `src/training.js`; years BC count back from AD 2000, as on the timeline). **Next** goes on; after a correct answer it does so by itself after 2 seconds (`AUTO_NEXT_MS`), while a wrong one waits for **Next**. **Mark as known** (under the buttons) marks the current chrono as known, so it no longer appears in training, and goes on to the next one without recording an answer for it. If all the chronos are known, **Train** is disabled and the Training page says so. The run ends after the last chrono or with **Finish**. Every answer is recorded in a training run (`/api/training/runs…`), and `/api/me/stats` returns totals; only finished runs with at least one answer count in the statistics. A run that is left unfinished is not counted.
+- **Accounts page** for admins (`/users.html`): approve or reject new accounts, revoke or delete existing ones.
+- The round account icon next to the language flag opens the Memory line (it sends signed-out visitors to the login page and back).
+
+Behind a reverse proxy the cookie gets the `Secure` flag only if the proxy sends `X-Forwarded-Proto: https` (Apache: `RequestHeader set X-Forwarded-Proto "https"`, needs `mod_headers`), or if `COOKIE_SECURE=1` is set. The proxy must also keep the visitor's `Host` (`ProxyPreserveHost On`) or send `X-Forwarded-Host`, because state-changing requests check that `Origin` matches it.
+
+Run `npm run build && npm run smoke` to test the accounts, chronos and training API against a temporary database.
+
 ## Languages
 
 `public/data/languages.json` lists the languages (`[{ "code": "en", "label": "English" }, …]`); the first is the default and the fallback. The seed ships English (default), Russian, Italian, German and Spanish. To add one, append an entry and add a block for its code in `src/strings.js` (interface text; English is used for missing keys).
@@ -85,6 +98,18 @@ Translatable fields are maps from language code to text: card `title`, `contents
 - Visitor-submitted cards are stored in the language the visitor was viewing.
 
 ## Changelog
+
+### 0.8.0
+
+- User accounts (login and password; `pending` until an admin approves them), with a login and registration page (`/login.html`) and an accounts page for admins (`/users.html`).
+- Chronos (a second set of dated short titles, optionally linked to cards) and the Memory line page (`/memory.html`): select chronos, add your own. Your own memory line is on a separate page, My chronos (`/my-chronos.html`).
+- Training (`/train.html`): the user's chronos one by one in random order, answered with a number and a unit (Gya / Mya / Kya / BC); every run and answer is recorded for per-user statistics. Chronos can be marked as known (**Mark as known** in training, or the **Known** toggle on My chronos) to leave them out.
+- Training details: a comma works as the decimal point; a number above 2000 is read as years ago; Enter on an empty field shows the answer (skipped answers are kept but are neither correct nor incorrect); a correct or shown answer moves on by itself after 2 seconds; a note points out the BC / years-ago slip.
+- Admin pages share a header with links to the Memory line, Accounts, Proposals and Translations, with counts of what waits for approval.
+- `npm run chronos-from-cards` adds a chrono, linked to the card and titled with its title, for every published card that has none.
+- Passwords need at least 6 characters, and nothing else.
+- Accounts are stored in SQLite (`data/app.db`); `better-sqlite3` is a new dependency.
+- Admins are now accounts too: they sign in on `/login.html` and the session cookie replaces the `?login=&password=` URL parameters and the `ADMIN_LOGIN` / `ADMIN_PASSWORD` variables (both removed). Create an admin with `npm run create-admin -- <login> <password>`.
 
 ### 0.7.0
 

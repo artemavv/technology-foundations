@@ -4,7 +4,7 @@ import { useLang } from '../i18n.jsx'
 
 // Upload / replace / remove control for a card picture. `value` is the stored
 // file name ('' = none). With `readOnly` it only shows the current picture.
-export default function PictureField({ label, hint, value, onChange, creds, readOnly, disabled, onBusy, onError }) {
+export default function PictureField({ label, hint, value, onChange, readOnly, disabled, onBusy, onError }) {
   const { t } = useLang()
   const [busy, setBusy] = useState(false)
 
@@ -16,7 +16,7 @@ export default function PictureField({ label, hint, value, onChange, creds, read
     onBusy?.(true)
     onError?.('')
     try {
-      onChange(await uploadPicture(creds, file))
+      onChange(await uploadPicture(file))
     } catch (err) {
       onError?.(err.message)
     }

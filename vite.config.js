@@ -1,14 +1,15 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import adminApi from './server/adminApi.js'
+import accountsApi from './server/accountsApi.js'
 
-export default defineConfig(({ mode }) => {
-  // ADMIN_LOGIN / ADMIN_PASSWORD (no VITE_ prefix, so never sent to the browser)
-  const env = loadEnv(mode, process.cwd(), '')
+export default defineConfig(() => {
   return {
     plugins: [
       react(),
-      adminApi({ login: env.ADMIN_LOGIN, password: env.ADMIN_PASSWORD }),
+      // first: it tells adminApi who is signed in, and adminApi answers 404 to every /api/ path it doesn't know
+      accountsApi(),
+      adminApi(),
     ],
     build: {
       rollupOptions: {
@@ -16,6 +17,12 @@ export default defineConfig(({ mode }) => {
           main: 'index.html',
           translations: 'translations.html',
           proposals: 'proposals.html',
+          login: 'login.html',
+          memory: 'memory.html',
+          myChronos: 'my-chronos.html',
+          train: 'train.html',
+          users: 'users.html',
+          chronos: 'chronos.html',
         },
       },
     },

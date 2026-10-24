@@ -1,47 +1,16 @@
-// Admin access = `login` and `password` GET parameters, verified by the server.
-const params = () => new URLSearchParams(window.location.search)
-
-export function adminCredentials() {
-  const p = params()
-  const login = p.get('login')
-  const password = p.get('password')
-  return login && password ? { login, password } : null
-}
-
-const headers = (creds) => ({
-  'X-Admin-Login': creds.login,
-  'X-Admin-Password': creds.password,
-})
-
-export async function verifyAdmin(creds) {
-  try {
-    const r = await fetch('/api/admin/check', { headers: headers(creds) })
-    return r.ok
-  } catch {
-    return false
-  }
-}
-
-async function send(method, url, creds, body) {
-  const r = await fetch(url, {
-    method,
-    headers: { ...(creds ? headers(creds) : {}), 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const data = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error(data.error || `Save failed (${r.status})`)
-  return data
-}
+// Admin API calls. An admin signs in on /login.html like any user; the session
+// cookie identifies them, so these calls carry no credentials of their own.
+import { api } from './auth.js'
 
 // `approve: true` also publishes a pending card.
-export const saveCard = (creds, id, fields, approve = false) =>
-  send('PUT', `/api/cards/${encodeURIComponent(id)}`, creds, { ...fields, approve })
+export const saveCard = (id, fields, approve = false) =>
+  api('PUT', `/api/cards/${encodeURIComponent(id)}`, { ...fields, approve })
 
 // Upload a JPEG/PNG/WebP; resolves to the stored file name.
-export async function uploadPicture(creds, file) {
+export async function uploadPicture(file) {
   const r = await fetch('/api/pictures', {
     method: 'PUT',
-    headers: headers(creds),
+    headers: { 'X-Requested-With': 'pf' },
     body: file,
   })
   const data = await r.json().catch(() => ({}))
@@ -49,24 +18,12 @@ export async function uploadPicture(creds, file) {
   return data.name
 }
 
-export async function deleteCard(creds, id) {
-  const r = await fetch(`/api/cards/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    headers: headers(creds),
-  })
-  if (!r.ok) {
-    const data = await r.json().catch(() => ({}))
-    throw new Error(data.error || `Delete failed (${r.status})`)
-  }
-}
+export const deleteCard = (id) => api('DELETE', `/api/cards/${encodeURIComponent(id)}`)
 
-// creds may be null: anonymous visitors add cards as 'pending'.
-export const createCard = (creds, fields) => send('POST', '/api/cards', creds, fields)
+// Anyone may add a card: an admin's is published at once, anybody else's is 'pending'.
+export const createCard = (fields) => api('POST', '/api/cards', fields)
 
-export async function fetchPending(creds) {
-  const r = await fetch('/api/pending', { headers: headers(creds) })
-  return r.ok ? r.json() : []
-}
+export const fetchPending = () => api('GET', '/api/pending')
 
 // A card's sources as the edit-form text: one "URL" or "URL (title)" per line.
 export const sourcesToText = (sources) =>
@@ -74,8 +31,25 @@ export const sourcesToText = (sources) =>
     .map((s) => (typeof s === 'string' ? s : s.title ? `${s.url} (${s.title})` : s.url))
     .join('\n')
 
-export const createBlock =(creds, fields) => send('POST', '/api/blocks', creds, fields)
+export const createBlock = (fields) => api('POST', '/api/blocks', fields)
 
 // Special card ('start' or 'end'): title, contents (language maps) and langStatus only.
-export const saveSpecialCard = (creds, key, fields) =>
-  send('PUT', `/api/scards/${encodeURIComponent(key)}`, creds, fields)
+export const saveSpecialCard = (key, fields) => api('PUT', `/api/scards/${encodeURIComponent(key)}`, fields)
+
+// ---- user accounts and chronos (admin pages) ----
+
+// status: 'pending' | 'approved' | undefined for all
+export const fetchUsers = (status) => api('GET', `/api/admin/users${status ? `?status=${status}` : ''}`)
+
+// action: 'approve' | 'revoke'
+export const setUserStatus = (id, action) => api('POST', `/api/admin/users/${id}/${action}`)
+
+export const deleteUser = (id) => api('DELETE', `/api/admin/users/${id}`)
+
+export const fetchChronos = () => api('GET', '/api/admin/chronos')
+
+// id null creates; fields = { title: {lang: text}, cardId } or { title, date }
+export const saveChrono = (id, fields) =>
+  id === null ? api('POST', '/api/admin/chronos', fields) : api('PUT', `/api/admin/chronos/${id}`, fields)
+
+export const deleteChrono = (id) => api('DELETE', `/api/admin/chronos/${id}`)

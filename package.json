@@ -1,7 +1,7 @@
 {
   "name": "pf",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "seed": "node scripts/seed.js",
@@ -9,9 +9,13 @@
     "prebuild": "npm run seed",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "smoke": "node scripts/smoke.mjs",
+    "create-admin": "node scripts/create-admin.js",
+    "chronos-from-cards": "node scripts/chronos-from-cards.js"
   },
   "dependencies": {
+    "better-sqlite3": "^12.11.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

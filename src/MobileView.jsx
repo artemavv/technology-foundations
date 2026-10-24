@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import Card from './components/Card.jsx'
 import SpecialCard from './components/SpecialCard.jsx'
 import TimeNav from './components/TimeNav.jsx'
+import AccountLink from './components/AccountLink.jsx'
 import LangSwitcher from './components/LangSwitcher.jsx'
 import { useLang } from './i18n.jsx'
 import { formatKya } from './format.js'
@@ -201,6 +202,7 @@ export default function MobileView() {
     <div className="m-app">
       <header className="m-header">
         <h1>{t('siteTitle')}</h1>
+        <AccountLink />
         <LangSwitcher />
       </header>
       <TimeNav items={navItems} onGo={goTo} current={current} />
@@ -220,7 +222,7 @@ export default function MobileView() {
             </div>
           ) : item.card ? (
             <div className="m-item" key={item.card.id} data-mya={item.card.mya}>
-              <Card card={item.card} creds={null} sourcesModal mobile />
+              <Card card={item.card} sourcesModal mobile />
             </div>
           ) : (
             <div className="m-mark" key={item.mark.label}>

@@ -4,7 +4,10 @@
 // source form edits them. The two special cards (title and description only)
 // have their own rows, with their own forms, before the first and after the last card.
 import { Fragment, useEffect, useState } from 'react'
-import { adminCredentials, saveCard, saveSpecialCard, sourcesToText, verifyAdmin } from './admin.js'
+import { saveCard, saveSpecialCard, sourcesToText } from './admin.js'
+import { useAdmin } from './auth.js'
+import AdminNav from './components/AdminNav.jsx'
+import AdminOnly from './components/AdminOnly.jsx'
 import PictureField from './components/PictureField.jsx'
 import RichText from './components/RichText.jsx'
 import { useLang, wikipediaUrl } from './i18n.jsx'
@@ -49,7 +52,7 @@ function CardView({ card, code, def }) {
 }
 
 // One language's fields. `shared` holds the language-independent values.
-function LangForm({ code, def, card, values, onChange, shared, editable, creds, saving, onBusy, onError }) {
+function LangForm({ code, def, card, values, onChange, shared, editable, saving, onBusy, onError }) {
   const { t, languages } = useLang()
   const label = languages.find((l) => l.code === code)?.label ?? code
   const required = code === def // a translation may be left empty
@@ -126,7 +129,6 @@ function LangForm({ code, def, card, values, onChange, shared, editable, creds, 
           hint={hint}
           value={shared[key]}
           onChange={(file) => shared.set({ [key]: file })}
-          creds={creds}
           readOnly={!editable}
           disabled={saving}
           onBusy={onBusy}
@@ -138,7 +140,7 @@ function LangForm({ code, def, card, values, onChange, shared, editable, creds, 
 }
 
 // Both forms of a row; remounted (edits reset) when a language dropdown changes.
-function RowEditor({ card, src, tr, def, creds, onSaved, onClose }) {
+function RowEditor({ card, src, tr, def, onSaved, onClose }) {
   const { t } = useLang()
   const [values, setValues] = useState(() =>
     Object.fromEntries(
@@ -169,7 +171,7 @@ function RowEditor({ card, src, tr, def, creds, onSaved, onClose }) {
     const both = (key) => ({ [src]: values[src][key], [tr]: values[tr][key] })
     try {
       onSaved(
-        await saveCard(creds, card.id, {
+        await saveCard(card.id, {
           title: both('title'),
           contents: both('contents'),
           wikipedia: both('wikipedia'),
@@ -199,7 +201,6 @@ function RowEditor({ card, src, tr, def, creds, onSaved, onClose }) {
       onChange={(patch) => setValues((v) => ({ ...v, [code]: { ...v[code], ...patch } }))}
       shared={{ ...shared, set: (patch) => setShared((s) => ({ ...s, ...patch })) }}
       editable={code === src}
-      creds={creds}
       saving={saving}
       onBusy={setSaving}
       onError={setError}
@@ -271,7 +272,7 @@ function SpecialLangForm({ code, def, card, values, onChange }) {
 }
 
 // Both forms of a special card row; remounted when a language dropdown changes.
-function SpecialRowEditor({ which, card, src, tr, def, creds, onSaved, onClose }) {
+function SpecialRowEditor({ which, card, src, tr, def, onSaved, onClose }) {
   const { t } = useLang()
   const [values, setValues] = useState(() =>
     Object.fromEntries(
@@ -296,7 +297,7 @@ function SpecialRowEditor({ which, card, src, tr, def, creds, onSaved, onClose }
     try {
       onSaved(
         which,
-        await saveSpecialCard(creds, which, {
+        await saveSpecialCard(which, {
           title: both('title'),
           contents: both('contents'),
           // the default language is always completed
@@ -346,7 +347,7 @@ function SpecialRowEditor({ which, card, src, tr, def, creds, onSaved, onClose }
 }
 
 // A special card's row: `which` is 'start' (the opening card) or 'end' (after the last card).
-function SpecialRow({ which, card, src, tr, def, creds, onSaved }) {
+function SpecialRow({ which, card, src, tr, def, onSaved }) {
   const { t } = useLang()
   const [editing, setEditing] = useState(false)
   return (
@@ -360,7 +361,6 @@ function SpecialRow({ which, card, src, tr, def, creds, onSaved }) {
           src={src}
           tr={tr}
           def={def}
-          creds={creds}
           onSaved={onSaved}
           onClose={() => setEditing(false)}
         />
@@ -381,7 +381,7 @@ function SpecialRow({ which, card, src, tr, def, creds, onSaved }) {
   )
 }
 
-function Row({ n, card, src, tr, def, creds, onSaved }) {
+function Row({ n, card, src, tr, def, onSaved }) {
   const { t } = useLang()
   const [editing, setEditing] = useState(false)
   return (
@@ -397,7 +397,6 @@ function Row({ n, card, src, tr, def, creds, onSaved }) {
           src={src}
           tr={tr}
           def={def}
-          creds={creds}
           onSaved={onSaved}
           onClose={() => setEditing(false)}
         />
@@ -421,8 +420,7 @@ function Row({ n, card, src, tr, def, creds, onSaved }) {
 export default function TranslationsPage() {
   const { t, languages, def } = useLang()
   const codes = languages.map((l) => l.code)
-  const [creds] = useState(adminCredentials)
-  const [admin, setAdmin] = useState(null) // null = checking
+  const admin = useAdmin() // null = checking
   const [cards, setCards] = useState(null)
   const [scards, setScards] = useState({}) // special cards by key; missing ones are empty rows
   const [failed, setFailed] = useState(false)
@@ -438,11 +436,6 @@ export default function TranslationsPage() {
   useEffect(() => {
     document.title = `${t('siteTitle')} — ${t('translationsTitle')}`
   }, [t])
-
-  useEffect(() => {
-    if (!creds) return setAdmin(false)
-    verifyAdmin(creds).then(setAdmin)
-  }, [creds])
 
   useEffect(() => {
     if (!admin) return
@@ -476,7 +469,6 @@ export default function TranslationsPage() {
       src={langs.src}
       tr={langs.tr}
       def={def}
-      creds={creds}
       onSaved={savedSpecial}
     />
   )
@@ -498,11 +490,12 @@ export default function TranslationsPage() {
   const startAt = cards?.findIndex((c) => c.id === scards.start?.before) ?? -1
 
   if (admin === null) return <p className="loading">{t('loading')}</p>
-  if (!admin) return <p className="loading">{t('adminsOnly')}</p>
+  if (!admin) return <AdminOnly />
   return (
     <div className="tr-page">
       <header className="tr-header">
         <h1>{t('translationsTitle')}</h1>
+        <AdminNav />
         <div className="tr-selects">
           {select('src', t('sourceLanguage'))}
           {select('tr', t('translationLanguage'))}
@@ -514,7 +507,7 @@ export default function TranslationsPage() {
       {cards?.map((card, i) => (
         <Fragment key={card.id}>
           {i === startAt && special('start')}
-          <Row n={i + 1} card={card} src={langs.src} tr={langs.tr} def={def} creds={creds} onSaved={saved} />
+          <Row n={i + 1} card={card} src={langs.src} tr={langs.tr} def={def} onSaved={saved} />
         </Fragment>
       ))}
       {cards && special('end')}

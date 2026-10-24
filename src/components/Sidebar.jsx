@@ -28,7 +28,7 @@ function stackOffset(count, listHeight) {
 // null before the cursor has been used. A block shows once the cursor has
 // crossed its age left-to-right (cursorKya <= block.kya) and hides again when
 // the cursor crosses back. Shown blocks stack from the top, oldest first.
-export default function Sidebar({ blocks, cats, cursorKya, creds, onAdded, onClose }) {
+export default function Sidebar({ blocks, cats, cursorKya, admin, onAdded, onClose }) {
   const { pick, t } = useLang()
   const [adding, setAdding] = useState(false)
   const [listHeight, setListHeight] = useState(600)
@@ -51,7 +51,7 @@ export default function Sidebar({ blocks, cats, cursorKya, creds, onAdded, onClo
     <aside className="sidebar" aria-label={t('blocks')}>
       <div className="sidebar-header">
         <span>{t('blocks')}</span>
-        {creds && (
+        {admin && (
           <button
             type="button"
             className="sidebar-btn"
@@ -95,7 +95,6 @@ export default function Sidebar({ blocks, cats, cursorKya, creds, onAdded, onClo
       {adding && (
         <BlockModal
           cats={cats}
-          creds={creds}
           onSaved={onAdded}
           onClose={() => setAdding(false)}
         />

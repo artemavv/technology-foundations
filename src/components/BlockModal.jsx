@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { createBlock } from '../admin.js'
 import { useLang } from '../i18n.jsx'
 
-export default function BlockModal({ cats, creds, onSaved, onClose }) {
+export default function BlockModal({ cats, onSaved, onClose }) {
   const { lang, pick, t } = useLang()
   const keys = Object.keys(cats)
   const [title, setTitle] = useState('')
@@ -23,7 +23,7 @@ export default function BlockModal({ cats, creds, onSaved, onClose }) {
     setSaving(true)
     setError('')
     try {
-      onSaved(await createBlock(creds, { title: { [lang]: title }, time, category }))
+      onSaved(await createBlock({ title: { [lang]: title }, time, category }))
       onClose()
     } catch (err) {
       setError(err.message)

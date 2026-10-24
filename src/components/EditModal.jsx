@@ -6,8 +6,8 @@ import PictureField from './PictureField.jsx'
 
 const NEW_CARD = { title: {}, time: '', contents: {}, sources: [], wikipedia: {} }
 
-// card = null -> add a new card (anyone; pending unless creds are admin's)
-export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) {
+// card = null -> add a new card (anyone; pending unless the user is an admin)
+export default function EditModal({ card, admin, onSaved, onDeleted, onClose }) {
   const { lang, def, own, pick, defaultText, t } = useLang()
   const code = lang.toUpperCase()
   const isNew = !card
@@ -45,12 +45,12 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
       contents: { [lang]: contents },
       sources: sources.split('\n'),
       wikipedia: { [lang]: wikipedia },
-      ...(creds ? pictures : {}), // only admins can attach pictures
+      ...(admin ? pictures : {}), // only admins can attach pictures
     }
     try {
       if (isNew) {
-        const created = await createCard(creds, fields)
-        if (creds) {
+        const created = await createCard(fields)
+        if (admin) {
           onSaved(created)
           onClose()
         } else {
@@ -58,7 +58,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
         }
         return
       }
-      onSaved(await saveCard(creds, card.id, fields, approve))
+      onSaved(await saveCard(card.id, fields, approve))
       onClose()
     } catch (err) {
       setError(err.message)
@@ -88,7 +88,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
     setSaving(true)
     setError('')
     try {
-      await deleteCard(creds, card.id)
+      await deleteCard(card.id)
       onDeleted(card.id)
       onClose()
     } catch (err) {
@@ -155,7 +155,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
           />
           {lang !== def && <span className="edit-hint">{t('wikipediaHint')}</span>}
         </label>
-        {creds ? (
+        {admin ? (
           <>
             {[
               ['photo', t('photo'), t('photoHint')],
@@ -167,7 +167,6 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
                 hint={hint}
                 value={pictures[key]}
                 onChange={(name) => setPictures((p) => ({ ...p, [key]: name }))}
-                creds={creds}
                 disabled={saving}
                 onBusy={setSaving}
                 onError={setError}
@@ -183,7 +182,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
         )}
         {error && <p className="edit-error" role="alert">{error}</p>}
         <div className="edit-buttons">
-          {!isNew && creds && (
+          {!isNew && admin && (
             <button
               type="button"
               className="danger"
@@ -197,7 +196,7 @@ export default function EditModal({ card, creds, onSaved, onDeleted, onClose }) 
             {t('cancel')}
           </button>
           <button type="submit" className={isPending ? '' : 'primary'} disabled={saving}>
-            {saving ? t('saving') : isNew && !creds ? t('submit') : t('save')}
+            {saving ? t('saving') : isNew && !admin ? t('submit') : t('save')}
           </button>
           {isPending && (
             <button

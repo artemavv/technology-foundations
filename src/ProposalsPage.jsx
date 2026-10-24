@@ -3,7 +3,10 @@
 // A proposal is written in the visitor's language, so the editor also offers
 // the default language, to add the missing text while reviewing.
 import { useEffect, useState } from 'react'
-import { adminCredentials, deleteCard, fetchPending, saveCard, sourcesToText, verifyAdmin } from './admin.js'
+import { deleteCard, fetchPending, saveCard, sourcesToText } from './admin.js'
+import { useAdmin } from './auth.js'
+import AdminNav from './components/AdminNav.jsx'
+import AdminOnly from './components/AdminOnly.jsx'
 import PictureField from './components/PictureField.jsx'
 import RichText from './components/RichText.jsx'
 import { useLang, wikipediaUrl } from './i18n.jsx'
@@ -98,7 +101,7 @@ function Preview({ card, codes, def }) {
 
 // Edit form: a text form per language (the proposal's languages and the default
 // one), then the fields shared by all languages.
-function Editor({ card, codes, def, creds, busy, onBusy, onError, onSubmit, onCancel }) {
+function Editor({ card, codes, def, busy, onBusy, onError, onSubmit, onCancel }) {
   const { t, languages } = useLang()
   const shown = codes.filter((c) => c === def || writtenIn(card, codes, def).includes(c))
   const [values, setValues] = useState(() =>
@@ -202,7 +205,6 @@ function Editor({ card, codes, def, creds, busy, onBusy, onError, onSubmit, onCa
             hint={hint}
             value={shared[key]}
             onChange={(name) => setShared((s) => ({ ...s, [key]: name }))}
-            creds={creds}
             disabled={busy}
             onBusy={onBusy}
             onError={onError}
@@ -224,7 +226,7 @@ function Editor({ card, codes, def, creds, busy, onBusy, onError, onSubmit, onCa
   )
 }
 
-function Proposal({ card, creds, codes, def, onChanged, onApproved, onRejected }) {
+function Proposal({ card, codes, def, onChanged, onApproved, onRejected }) {
   const { t, languages } = useLang()
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -246,18 +248,18 @@ function Proposal({ card, creds, codes, def, onChanged, onApproved, onRejected }
   // saving keeps the proposal pending; approving also publishes it
   const submit = (fields, approve) =>
     run(async () => {
-      const saved = await saveCard(creds, card.id, fields, approve)
+      const saved = await saveCard(card.id, fields, approve)
       if (approve) onApproved(card, saved)
       else {
         onChanged(saved)
         setEditing(false)
       }
     })
-  const approve = () => run(async () => onApproved(card, await saveCard(creds, card.id, fieldsOf(card, def), true)))
+  const approve = () => run(async () => onApproved(card, await saveCard(card.id, fieldsOf(card, def), true)))
   const reject = () => {
     if (!window.confirm(t('confirmReject', titleOf(card, def)))) return
     return run(async () => {
-      await deleteCard(creds, card.id)
+      await deleteCard(card.id)
       onRejected(card)
     })
   }
@@ -274,7 +276,6 @@ function Proposal({ card, creds, codes, def, onChanged, onApproved, onRejected }
           card={card}
           codes={codes}
           def={def}
-          creds={creds}
           busy={busy}
           onBusy={setBusy}
           onError={setError}
@@ -305,8 +306,7 @@ function Proposal({ card, creds, codes, def, onChanged, onApproved, onRejected }
 export default function ProposalsPage() {
   const { t, languages, def } = useLang()
   const codes = languages.map((l) => l.code)
-  const [creds] = useState(adminCredentials)
-  const [admin, setAdmin] = useState(null) // null = checking
+  const admin = useAdmin() // null = checking
   const [proposals, setProposals] = useState(null)
   const [notice, setNotice] = useState('')
 
@@ -315,19 +315,14 @@ export default function ProposalsPage() {
   }, [t])
 
   useEffect(() => {
-    if (!creds) return setAdmin(false)
-    verifyAdmin(creds).then(setAdmin)
-  }, [creds])
-
-  useEffect(() => {
-    if (admin) fetchPending(creds).then((list) => setProposals(newestFirst(list)))
-  }, [admin, creds])
+    if (admin) fetchPending().then((list) => setProposals(newestFirst(list))).catch(() => setProposals([]))
+  }, [admin])
 
   const without = (card) => setProposals((list) => list.filter((c) => c.id !== card.id))
   const changed = (card) => setProposals((list) => list.map((c) => (c.id === card.id ? card : c)))
 
   if (admin === null) return <p className="loading">{t('loading')}</p>
-  if (!admin) return <p className="loading">{t('adminsOnly')}</p>
+  if (!admin) return <AdminOnly />
   return (
     <div className="tr-page">
       <header className="tr-header">
@@ -335,6 +330,7 @@ export default function ProposalsPage() {
           {t('proposalsTitle')}
           {proposals && <span className="pr-count">{proposals.length}</span>}
         </h1>
+        <AdminNav proposals={proposals?.length} />
       </header>
       {notice && <p className="pr-notice" role="status">{notice}</p>}
       {!proposals && <p className="loading">{t('loading')}</p>}
@@ -343,7 +339,6 @@ export default function ProposalsPage() {
         <Proposal
           key={card.id}
           card={card}
-          creds={creds}
           codes={codes}
           def={def}
           onChanged={changed}

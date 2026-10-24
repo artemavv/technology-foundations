@@ -1272,3 +1272,569 @@ body,
 .nav-menu li + li {
   border-top: 1px solid #eef1f5;
 }
+
+/* ---- accounts and the memory line ---- */
+/* round link beside the language flag */
+.account-link {
+  position: fixed;
+  top: 8px;
+  right: 48px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #1f2937;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.4);
+}
+.account-link:hover {
+  box-shadow: 0 0 0 2px #676767;
+}
+.account-link svg {
+  width: 16px;
+  height: 16px;
+}
+.m-header .account-link {
+  right: calc(var(--units-width) + 48px);
+}
+
+.login-page {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 48px 16px;
+}
+.login-page h1 {
+  margin: 0 0 20px;
+  font-size: 22px;
+}
+.login-box {
+  width: 100%;
+}
+.login-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #d8dce2;
+}
+.login-tabs button {
+  margin-bottom: -1px;
+  padding: 6px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  color: #55606e;
+  cursor: pointer;
+}
+.login-tabs button.active {
+  border-bottom-color: #2563eb;
+  color: #1f2937;
+  font-weight: 600;
+}
+.login-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.login-back {
+  font-size: 13px;
+}
+.button-link {
+  padding: 6px 14px;
+  border: 1px solid #c4cad2;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 14px;
+  text-decoration: none;
+}
+.button-link.primary {
+  background: #1f2937;
+  border-color: #1f2937;
+  color: #fff;
+}
+
+.memory-account {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 80px; /* clear of the fixed account link and language flag */
+  font-size: 14px;
+}
+.memory-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+.memory-sublink {
+  margin-right: auto;
+  font-size: 14px;
+}
+.memory-account button,
+.memory-toolbar button,
+.memory-actions button,
+.tr-header > button,
+.chrono-toggle {
+  font: inherit;
+  font-size: 14px;
+  padding: 6px 14px;
+  border: 1px solid #c4cad2;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2937;
+  cursor: pointer;
+}
+.memory-account button {
+  padding: 3px 10px;
+  font-size: 13px;
+}
+.memory-toolbar .primary,
+.tr-header > .primary {
+  background: #1f2937;
+  border-color: #1f2937;
+  color: #fff;
+}
+.memory-actions .danger {
+  color: #b91c1c;
+  border-color: #b91c1c;
+}
+.memory-account button:disabled,
+.memory-toolbar button:disabled,
+.memory-actions button:disabled,
+.tr-header > button:disabled,
+.chrono-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.memory-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.memory-row,
+.chrono-admin-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 8px;
+}
+.memory-row + .memory-row {
+  border-top: 1px solid #eef1f5;
+}
+/* on my memory line */
+.memory-row.memory-on {
+  background: #e3edfd;
+  box-shadow: inset 3px 0 0 #2563eb;
+}
+/* the card icon beside the text block; a long title wraps inside the block, not under the icon */
+.memory-text {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.memory-main {
+  flex: 1;
+  min-width: 0;
+}
+/* the icon linking to the card; rows without a card keep an empty slot so titles line up */
+.memory-card,
+.memory-card-slot {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px; /* beside the first line of the title */
+}
+.memory-card {
+  display: flex;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+.memory-card:hover {
+  background: #dbe4f3;
+}
+.memory-card svg {
+  width: 100%;
+  height: 100%;
+}
+.memory-description {
+  display: block;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #55606e;
+  white-space: pre-line;
+}
+.memory-actions {
+  display: flex;
+  gap: 6px;
+}
+.chrono-toggle {
+  flex: 0 0 auto;
+  width: 30px;
+  padding: 2px 0;
+  text-align: center;
+  line-height: 1.3;
+}
+.chrono-toggle[aria-pressed='true'] {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.chrono-own {
+  border-color: transparent;
+  background: none;
+  color: #b45309;
+}
+.user-heading {
+  margin: 20px 0 0;
+  font-size: 15px;
+}
+.user-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.user-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+.chrono-admin-row {
+  padding: 0;
+}
+.chrono-form {
+  width: 100%;
+}
+@media (max-width: 700px) {
+  .memory-row,
+  .chrono-admin-row {
+    flex-wrap: wrap;
+  }
+  .memory-account {
+    padding-right: 76px;
+  }
+  /* tight rows: most chronos fit on one line at 350px */
+  .memory-page {
+    padding: 0 8px 40px;
+  }
+  .memory-row {
+    gap: 6px;
+    padding: 7px 2px;
+  }
+  .memory-row .chrono-toggle {
+    width: 24px;
+    padding: 1px 0;
+    font-size: 13px;
+  }
+  .memory-row .nav-time {
+    flex: 0 0 4.6em;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .memory-row .nav-title {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+  .memory-text {
+    gap: 6px;
+  }
+  .memory-card,
+  .memory-card-slot {
+    flex-basis: 16px;
+    width: 16px;
+    height: 16px;
+  }
+  .memory-description {
+    font-size: 12px;
+  }
+  /* a personal chrono's buttons go on a line of their own, so they don't squeeze the title */
+  .memory-row .memory-actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    margin-top: -2px;
+  }
+  /* the Remove button of a plain row stays on the title's line */
+  .memory-row .memory-actions.memory-actions-inline {
+    flex-basis: auto;
+    margin-top: 0;
+  }
+  .memory-row .memory-actions {
+    gap: 4px;
+  }
+  .memory-row .memory-actions button {
+    padding: 2px 7px;
+    font-size: 12px;
+  }
+  .memory-row .memory-actions .icon-btn {
+    width: 30px;
+    height: 26px;
+    padding: 0;
+  }
+  .icon-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+.memory-account a,
+.memory-sublink,
+.memory-card,
+.login-back a {
+  color: #2563eb;
+}
+
+/* a card in a popup */
+.card-modal {
+  width: min(380px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  border-radius: 8px;
+}
+.card-modal .card {
+  margin-top: 0;
+  border-radius: 8px;
+  border-left-color: #d8dce2;
+}
+.card-modal .card img {
+  max-height: none;
+  object-fit: cover;
+}
+
+/* training */
+.train-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 520px;
+  margin: 28px auto;
+  text-align: center;
+}
+.train-progress {
+  margin: 0;
+  font-size: 13px;
+  color: #7c8794;
+}
+.train-title {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.25;
+}
+.train-answer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.train-answer input {
+  width: 130px;
+  padding: 8px 10px;
+  border: 1px solid #c4cad2;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 20px;
+  text-align: center;
+  color: #1f2937;
+}
+.train-units {
+  display: flex;
+}
+.train-years {
+  padding: 9px 12px;
+  font-size: 15px;
+  color: #55606e;
+}
+.train-units button {
+  padding: 9px 12px;
+  border: 1px solid #c4cad2;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  color: #1f2937;
+  cursor: pointer;
+}
+.train-units button + button {
+  margin-left: -1px;
+}
+.train-units button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+.train-units button:last-child {
+  border-radius: 0 6px 6px 0;
+}
+.train-units button.active {
+  position: relative; /* its border over the neighbour's */
+  background: #1f2937;
+  border-color: #1f2937;
+  color: #fff;
+}
+.train-units button:disabled,
+.train-answer input:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.train-result {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 16px;
+}
+.train-result strong {
+  font-size: 20px;
+}
+.train-ok strong {
+  color: #15803d;
+}
+.train-bad strong {
+  color: #b91c1c;
+}
+.train-skip strong {
+  color: #55606e;
+}
+.train-result .train-note {
+  max-width: 420px;
+  margin-top: 6px;
+  font-size: 14px;
+  color: #55606e;
+}
+.train-score {
+  margin: 0;
+  font-size: 18px;
+}
+.train-skipped {
+  margin: 0;
+  font-size: 14px;
+  color: #55606e;
+}
+.train-buttons {
+  display: flex;
+  gap: 8px;
+}
+.train-buttons button {
+  padding: 8px 22px;
+  border: 1px solid #c4cad2;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+  color: #1f2937;
+  cursor: pointer;
+}
+.train-buttons .primary {
+  background: #1f2937;
+  border-color: #1f2937;
+  color: #fff;
+}
+.train-buttons button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* a line growing along the Next button while a correct answer is about to move on */
+.train-buttons .train-auto {
+  position: relative;
+  overflow: hidden;
+}
+.train-buttons .train-auto::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.7);
+  animation: train-countdown var(--auto-ms) linear forwards;
+}
+@keyframes train-countdown {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* known chronos */
+.memory-known .nav-title,
+.memory-known .nav-time {
+  color: #7c8794;
+  font-weight: 400;
+}
+.tr-badge-known {
+  background: #e5e7eb;
+  color: #374151;
+}
+/* icon buttons of a row: the green tick (known) and the trash (take off my memory line) */
+.memory-actions .icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
+  padding: 0;
+}
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.memory-actions .memory-known-btn {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+.memory-actions .memory-known-btn[aria-pressed='true'] {
+  background: #16a34a;
+  color: #fff;
+}
+.memory-actions .memory-trash-btn {
+  color: #55606e;
+}
+.memory-actions .memory-trash-btn:hover:not(:disabled) {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+.train-known {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.train-known:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* links to the admin pages in a page header */
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 14px;
+}
+.admin-nav a {
+  color: #2563eb;
+}
+.admin-nav a[aria-current='page'] {
+  color: #1f2937;
+  font-weight: 600;
+  text-decoration: none;
+}
+.admin-count {
+  color: #b45309;
+  font-weight: 600;
+}

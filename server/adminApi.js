@@ -1,5 +1,5 @@
 // Vite plugin: minimal cards API (dev and `vite preview`).
-//   GET  /api/admin/check  admin: 204 if credentials are valid, else 401
+//   GET  /api/admin/check  admin: 204 if signed in as an admin, else 401
 //   GET  /api/pending      admin: list pending cards
 //   POST /api/cards        anyone: add a card. Admin -> published at once;
 //                          anonymous -> 'pending' (stored outside public/, with a
@@ -20,16 +20,16 @@
 // Cards may carry `langStatus: { <code>: 'pending' }` for translations awaiting
 // review. A language without an entry is completed, and the default language is
 // always completed. Sent as { <code>: 'completed' | 'pending' } and merged on edit.
-// Credentials come from ADMIN_LOGIN / ADMIN_PASSWORD (e.g. in .env.local) and are
-// sent by the page in the X-Admin-Login / X-Admin-Password headers. If either
-// variable is unset, the admin API is disabled.
-import { randomBytes, timingSafeEqual } from 'node:crypto'
+// "Admin" means a signed-in admin account (scripts/create-admin.js): accountsApi.js,
+// which must be registered before this plugin, reads the session cookie and sets
+// req.pfAdmin. Without it nobody is an admin.
+import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import { parseDate } from './parseDate.js'
 import { fetchTitle } from './pageTitle.js'
+import { clientIp, readBody, send } from './http.js'
 
-const MAX_BODY = 64 * 1024
 const EDITABLE = ['time', 'mya', 'title', 'contents', 'sources', 'wikipedia', 'photo', 'illustration']
 const TEXT_FIELDS = ['title', 'contents', 'wikipedia'] // per-language maps
 const STATUSES = ['completed', 'pending'] // translation status; stored only when 'pending'
@@ -39,19 +39,6 @@ const MAX_TITLE = 40
 const SPECIAL_KEYS = ['start', 'end'] // the special cards: before the first and after the last card
 const MAX_PENDING = 200
 const SUBMIT_LIMIT = { count: 5, windowMs: 60 * 60 * 1000 } // per IP
-
-const same = (a, b) => {
-  const x = Buffer.from(String(a ?? ''))
-  const y = Buffer.from(String(b ?? ''))
-  return x.length === y.length && timingSafeEqual(x, y)
-}
-
-const send = (res, status, body) => {
-  res.statusCode = status
-  if (body === undefined) return res.end()
-  res.setHeader('Content-Type', 'application/json')
-  res.end(JSON.stringify(body))
-}
 
 const isHttpUrl = (s) => {
   try {
@@ -68,7 +55,7 @@ const isWikipedia = (s) => {
 }
 
 // A { lang: text } map with known language codes; texts are trimmed.
-function langMap(v, name, langs) {
+export function langMap(v, name, langs) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) {
     return { error: `${name} must be a map of language code to text` }
   }
@@ -187,24 +174,6 @@ function pictureExt(buf) {
   return null
 }
 
-function readBody(req, limit = MAX_BODY) {
-  return new Promise((resolveBody, reject) => {
-    let size = 0
-    let tooLarge = false
-    const chunks = []
-    // keep draining an oversized body so the client can still read our 413
-    req.on('data', (c) => {
-      size += c.length
-      if (size > limit) tooLarge = true
-      else chunks.push(c)
-    })
-    req.on('end', () =>
-      tooLarge ? reject(new Error('too large')) : resolveBody(Buffer.concat(chunks)),
-    )
-    req.on('error', reject)
-  })
-}
-
 const slugify = (title) =>
   title
     .toLowerCase()
@@ -258,7 +227,7 @@ function applyFields(card, value, def) {
   return null
 }
 
-export default function adminApi({ login, password }) {
+export default function adminApi() {
   const cardsFile = resolve('public/data/cards.json')
   // pending cards live outside public/ so they are never served to visitors
   const pendingFile = resolve('data/pending.json')
@@ -310,21 +279,7 @@ export default function adminApi({ login, password }) {
   // slug source: the default-language text if there is one, else any
   const slugSource = (map, def) => (typeof map === 'string' ? map : (map[def] || Object.values(map).find(Boolean) || ''))
 
-  const isAdmin = (req) =>
-    Boolean(login && password) &&
-    same(req.headers['x-admin-login'], login) &&
-    same(req.headers['x-admin-password'], password)
-  const sentCredentials = (req) =>
-    Boolean(req.headers['x-admin-login'] || req.headers['x-admin-password'])
-
-  // Behind a local reverse proxy the socket address is the proxy's: then take the
-  // client from the last X-Forwarded-For entry, the one the proxy itself appended.
-  const clientIp = (req) => {
-    const addr = req.socket.remoteAddress ?? '?'
-    if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(addr)) return addr
-    const forwarded = String(req.headers['x-forwarded-for'] ?? '').split(',').pop().trim()
-    return forwarded || addr
-  }
+  const isAdmin = (req) => req.pfAdmin === true
 
   const tooMany = (ip) => {
     const now = Date.now()
@@ -406,8 +361,7 @@ export default function adminApi({ login, password }) {
     }
 
     if (req.method === 'POST' && url === '/api/cards') {
-      // anonymous is fine; credentials that were sent must be valid
-      if (sentCredentials(req) && !admin) return deny(res)
+      // anonymous is fine
       if (!admin && tooMany(clientIp(req))) {
         return send(res, 429, { error: 'Too many submissions, try again later' })
       }
