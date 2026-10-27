@@ -26,13 +26,21 @@ const forgetMe = () => {
   mePromise = null
 }
 
-// the signed-in user ({ id, login }) or null; a network error counts as signed out
+// the signed-in user ({ id, login, nickname }) or null; a network error counts as signed out
 export const getMe = () =>
   (mePromise ??= api('GET', '/api/auth/me')
     .then((d) => d.user)
     .catch(() => null))
 
-export const register = (login, password) => api('POST', '/api/auth/register', { login, password })
+export const register = (login, password, nickname) =>
+  api('POST', '/api/auth/register', { login, password, nickname })
+
+export const updateNickname = (nickname) => {
+  forgetMe()
+  return api('PUT', '/api/auth/profile', { nickname })
+}
+
+export const changePassword = (current, password) => api('POST', '/api/auth/password', { current, password })
 
 export async function login(name, password) {
   forgetMe()

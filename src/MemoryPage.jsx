@@ -9,7 +9,6 @@ import AdminNav from './components/AdminNav.jsx'
 import CardModal from './components/CardModal.jsx'
 import SiteHeading from './components/SiteHeading.jsx'
 import ChronoModal from './components/ChronoModal.jsx'
-import LangSwitcher from './components/LangSwitcher.jsx'
 import { useLang } from './i18n.jsx'
 import { storeFor } from './memoryStore.js'
 
@@ -167,8 +166,9 @@ export default function MemoryPage({ mine = false }) {
   }, [loading, store, t])
 
   const items = useMemo(() => {
-    const all = [...(data?.chronos ?? []), ...(data?.personal ?? [])].sort(byAge)
-    return mine ? all.filter((c) => c.selected) : all
+    // the full list holds the global chronos only; own ones are on My chronos
+    if (!mine) return [...(data?.chronos ?? [])].sort(byAge)
+    return [...(data?.chronos ?? []), ...(data?.personal ?? [])].sort(byAge).filter((c) => c.selected)
   }, [data, mine])
   // on the user's memory line, and of those the ones training will ask about (not known)
   const mineCount = useMemo(
@@ -248,15 +248,15 @@ export default function MemoryPage({ mine = false }) {
   if (loading) return <p className="loading">{t('loading')}</p>
   return (
     <div className="tr-page memory-page">
-      <LangSwitcher />
       <header className="tr-header">
         <SiteHeading sub={mine ? t('myChronos') : undefined} />
         {user?.isAdmin && <AdminNav />}
-        <div className="memory-account">
-          {!mine && <a href={`/my-chronos.html?lang=${lang}`}>{t('myChronos')}</a>}
+        <div className={`memory-account${user ? '' : ' memory-guest'}`}>
           {user ? (
             <>
-              <span>{user.login}</span>
+              <a className="memory-profile" href={`/profile.html?lang=${lang}`} title={t('profileTitle')}>
+                @{user.nickname ?? user.login}
+              </a>
               <button type="button" onClick={() => logout().then(() => window.location.assign('/login.html'))}>
                 {t('accountLogOut')}
               </button>
@@ -268,30 +268,66 @@ export default function MemoryPage({ mine = false }) {
           )}
         </div>
       </header>
+      {!mine && <p className="memory-note">{t('memoryIntro')}</p>}
       <div className="memory-toolbar">
-        {data && trainCount > 0 ? (
-          <a className="memory-train-btn" href={`/train.html?lang=${lang}`}>
-            {t('trainStart')}
-          </a>
-        ) : (
-          // nothing to train on: a disabled button, and the tooltip says why
-          <button
-            type="button"
-            className="memory-train-btn"
-            disabled
-            title={data ? t(mineCount === 0 ? 'memoryTrainEmpty' : 'memoryTrainAllKnown') : undefined}
-          >
-            {t('trainStart')}
-          </button>
-        )}
-        {user && (
-          <button type="button" onClick={() => setModal({})}>
+        <a
+          className={`memory-train-btn memory-mine-btn`}
+          href={`/${mine ? 'memory' : 'my-chronos'}.html?lang=${lang}`}
+        >
+          {mine ? t('allChronos') : mineCount > 0 ? `${t('myChronos')} (${mineCount})` : t('myChronos')}
+        </a>
+        {mine && user && (
+          <button type="button" className="memory-add-btn" onClick={() => setModal({})}>
             {t('memoryAdd')}
           </button>
         )}
+        {mine &&
+          (data && trainCount > 0 ? (
+            <a className="memory-train-btn" href={`/train.html?lang=${lang}`}>
+              {t('trainStart')}
+            </a>
+          ) : (
+            // nothing to train on: a disabled button, and the tooltip says why
+            <button
+              type="button"
+              className="memory-train-btn"
+              disabled
+              title={data ? t(mineCount === 0 ? 'memoryTrainEmpty' : 'memoryTrainAllKnown') : undefined}
+            >
+              {t('trainStart')}
+            </button>
+          ))}
       </div>
-      {!user && <p className="memory-note">{t('memoryGuestNote')}</p>}
-      {mine && items.length > 0 && <p className="memory-note">{t('memoryKnownNote')}</p>}
+      {!user && (
+        <p className="memory-note">
+          {/* the text in [brackets] is the link to the registration form */}
+          {t('memoryGuestNote').split(/\[([^\]]+)\]/).map((part, i) =>
+            i % 2 ? (
+              <a key={i} href={`/login.html?mode=register&next=${encodeURIComponent(window.location.pathname + window.location.search)}`}>
+                {part}
+              </a>
+            ) : (
+              part
+            ),
+          )}
+        </p>
+      )}
+      {mine && items.length > 0 && (
+        <p className="memory-note">
+          {/* the Xi is drawn in a box, like the known button in the rows */}
+          {t('memoryKnownNote')
+            .split(/(\u039E)/)
+            .map((part, i) =>
+              part === '\u039E' ? (
+                <span key={i} className="xi-mark">
+                  {part}
+                </span>
+              ) : (
+                part
+              ),
+            )}
+        </p>
+      )}
       {error && <p className="edit-error" role="alert">{error}</p>}
       {!data && !error && <p className="loading">{t('loading')}</p>}
       {data && items.length === 0 && (

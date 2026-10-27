@@ -1,8 +1,8 @@
-# Technology Foundations
+# How it began
 
 ## About this project
 
-Technology Foundations is a timeline page that tells the story of how modern technology became possible, starting from the Big Bang and ending around 2500 BC. It follows the chain of events that made everything else possible: the first atoms, the Earth, the first life, animals, the first humans and their tools, fire, farming and writing.
+"How it began" is a timeline page that tells the story of how modern technology became possible, starting from the Big Bang and ending around 2500 BC. It follows the chain of events that made everything else possible: the first atoms, the Earth, the first life, animals, the first humans and their tools, fire, farming and writing.
 
 You move along a timeline by scrolling, and each event is a small card with a short explanation, picture, and links to read more.
 
@@ -74,7 +74,7 @@ A missing file, or a card without any text, simply leaves that card out. `before
 
 ## User accounts and the Memory line
 
-Visitors can register with a login and a password. A new account is `pending` until an admin approves it; only approved accounts can log in. Sessions use an HttpOnly cookie (30 days); passwords are stored as scrypt hashes. Accounts, personal chronos and training statistics are kept in SQLite, in `data/app.db` (git-ignored, never served; set `DB_PATH` to use another file). The database is created and migrated automatically on the first account request. **Back up `data/app.db`** (it runs in WAL mode, so copy `app.db-wal` and `app.db-shm` along with it, or stop the server first). It needs the `better-sqlite3` package, a native module: `npm ci` normally downloads a prebuilt binary; if that fails on the server, install `build-essential` and `python3`. The Node version that runs the site must be the one `npm ci` was run with.
+Visitors can register with a login, a nickname (shown in competition tables instead of the login; unique, case-insensitive) and a password. A new account is `pending` until an admin approves it; only approved accounts can log in. Signed-in users change their nickname and password on `/profile.html` (a password change needs the current password and ends the user's other sessions). Sessions use an HttpOnly cookie (30 days); passwords are stored as scrypt hashes. Accounts, personal chronos and training statistics are kept in SQLite, in `data/app.db` (git-ignored, never served; set `DB_PATH` to use another file). The database is created and migrated automatically on the first account request. **Back up `data/app.db`** (it runs in WAL mode, so copy `app.db-wal` and `app.db-shm` along with it, or stop the server first). It needs the `better-sqlite3` package, a native module: `npm ci` normally downloads a prebuilt binary; if that fails on the server, install `build-essential` and `python3`. The Node version that runs the site must be the one `npm ci` was run with.
 
 - **Chronos** are short dated titles (a title per language and a date), a second set next to the cards. A chrono may be linked to a card and then follows the card's date; one without a card has a date of its own. Admins manage them on `/chronos.html`. On the first start with an empty database, `public/data/chronos.json` (sample: `seed/data/chronos.json`) is imported once; after that the database rules and the file is not read again. `npm run chronos-from-cards` (`scripts/chronos-from-cards.js`, `-- --dry-run` to only count) adds a chrono for every published card that has none yet, linked to the card and titled with the card's own title in every language it has; it is safe to run again, e.g. after new cards are published.
 - **Memory line** (`/memory.html`): all chronos, oldest first. The **+** / **✓** button puts a chrono on, or takes it off, the user's own memory line. Users can also add chronos of their own (title, date, optional description; not linked to a card, visible only to them). The **My chronos** link opens a separate page (`/my-chronos.html`) with the user's own memory line only: the chronos they selected plus their own. A **Known** toggle on each row marks a chrono as known: it is shown dimmed there and left out of training until the toggle is switched off. Taking a chrono off the memory line forgets that it was known. **Start** begins training on that set.
@@ -106,12 +106,8 @@ Translatable fields are maps from language code to text: card `title`, `contents
 - User accounts (login and password; `pending` until an admin approves them), with a login and registration page (`/login.html`) and an accounts page for admins (`/users.html`).
 - Chronos (a second set of dated short titles, optionally linked to cards) and the Memory line page (`/memory.html`): select chronos, add your own. Your own memory line is on a separate page, My chronos (`/my-chronos.html`).
 - Training (`/train.html`): the user's chronos one by one in random order, answered with a number and a unit (Gya / Mya / Kya / BC); every run and answer is recorded for per-user statistics. Chronos can be marked as known (**Mark as known** in training, or the **Known** toggle on My chronos) to leave them out.
-- Training details: a comma works as the decimal point; a number above 2000 is read as years ago; Enter on an empty field shows the answer (skipped answers are kept but are neither correct nor incorrect); a correct or shown answer moves on by itself after 2 seconds; a note points out the BC / years-ago slip.
-- Admin pages share a header with links to the Memory line, Accounts, Proposals and Translations, with counts of what waits for approval.
 - `npm run chronos-from-cards` adds a chrono, linked to the card and titled with its title, for every published card that has none.
-- Passwords need at least 6 characters, and nothing else.
 - Accounts are stored in SQLite (`data/app.db`); `better-sqlite3` is a new dependency.
-- Admins are now accounts too: they sign in on `/login.html` and the session cookie replaces the `?login=&password=` URL parameters and the `ADMIN_LOGIN` / `ADMIN_PASSWORD` variables (both removed). Create an admin with `npm run create-admin -- <login> <password>`.
 
 ### 0.7.0
 

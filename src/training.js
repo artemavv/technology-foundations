@@ -35,6 +35,9 @@ export function toMya(value, unit) {
   }
 }
 
+// Whether the guess is the real date (to within rounding), not just near it.
+export const isExact = (guessMya, actualMya) => Math.abs(guessMya - actualMya) <= actualMya * 1e-9
+
 export const isClose = (guessMya, actualMya) => Math.abs(guessMya - actualMya) <= actualMya * TOLERANCE
 
 // a new array in random order (Fisher-Yates)

@@ -1312,7 +1312,11 @@ body,
 }
 .login-page h1 {
   margin: 0 0 20px;
-  font-size: 22px;
+  line-height: 0;
+  text-align: center;
+}
+.login-page h1 img {
+  display: inline-block;
 }
 .login-box {
   width: 100%;
@@ -1342,9 +1346,6 @@ body,
   font-size: 14px;
   line-height: 1.45;
 }
-.login-back {
-  font-size: 13px;
-}
 .button-link {
   padding: 6px 14px;
   border: 1px solid #c4cad2;
@@ -1367,9 +1368,21 @@ body,
   margin-left: auto; /* on the right, also when it wraps to a row of its own */
   font-size: 14px;
 }
-/* whatever lands at the end of the first row stays clear of the fixed language flag */
-.memory-page .tr-header {
-  padding-right: 48px;
+.memory-profile {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.profile-forms {
+  width: min(400px, 100%);
+  margin: 0 auto;
+  padding: 16px 0 48px;
+}
+.profile-forms h3 {
+  margin: 20px 0 8px;
+  font-size: 16px;
 }
 .memory-account > * {
   white-space: nowrap;
@@ -1377,17 +1390,19 @@ body,
 .memory-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch; /* the big buttons are all as tall as the tallest */
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0;
 }
-/* Training: the big button on the left of the toolbar */
-.memory-toolbar .memory-train-btn {
+/* Training: the big button on the right of the toolbar (My chronos / All chronos, a blue twin, is on the left) */
+.memory-toolbar .memory-train-btn,
+.memory-toolbar .memory-add-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-right: auto;
+  box-sizing: border-box;
+  min-width: 220px;
   padding: 12px 30px;
   border: 0;
   border-radius: 8px;
@@ -1399,7 +1414,23 @@ body,
   text-decoration: none;
   cursor: pointer;
 }
-.memory-toolbar .memory-train-btn:hover:not(:disabled) {
+.memory-toolbar .memory-train-btn:not(.memory-mine-btn) {
+  margin-left: auto; /* Start training on the right */
+}
+.memory-toolbar .memory-add-btn {
+  background: #89d776;
+  color: #1f2937;
+}
+.memory-toolbar .memory-add-btn:hover:not(:disabled) {
+  background: #76c862;
+}
+.memory-toolbar .memory-mine-btn {
+  background: #2563eb;
+}
+.memory-toolbar .memory-mine-btn:hover {
+  background: #1d4ed8;
+}
+.memory-toolbar .memory-train-btn:hover:not(:disabled):not(.memory-mine-btn) {
   background: #111827;
 }
 .memory-toolbar .memory-train-btn:disabled {
@@ -1574,12 +1605,9 @@ body,
   .chrono-admin-row {
     flex-wrap: wrap;
   }
-  .memory-page .tr-header {
-    padding-right: 0; /* the heading keeps its own clearance; the rest sits below it */
-  }
-  /* the flag is at the end of the first row, which belongs to the heading alone */
+  /* the first row belongs to the heading alone, except for the Log in link of a guest: top right corner */
   .memory-page .tr-header .admin-nav,
-  .memory-page .tr-header .memory-account {
+  .memory-page .tr-header .memory-account:not(.memory-guest) {
     flex-basis: 100%;
   }
   .memory-page .tr-header .memory-account {
@@ -1652,9 +1680,6 @@ body,
 }
 .memory-account a,
 .memory-card,
-.login-back a {
-  color: #2563eb;
-}
 
 /* a card in a popup */
 .card-modal {
@@ -1763,6 +1788,9 @@ body,
 .train-bad strong {
   color: #b91c1c;
 }
+.train-almost strong {
+  color: #b45309;
+}
 .train-skip strong {
   color: #55606e;
 }
@@ -1855,6 +1883,17 @@ body,
   line-height: 1;
   cursor: pointer;
 }
+.xi-mark {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 0 0.3em;
+  border: 1px solid #16a34a;
+  border-radius: 4px;
+  color: #16a34a;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
 .memory-known-btn[aria-pressed='true'] {
   background: #16a34a;
   color: #fff;
@@ -1892,13 +1931,13 @@ body,
   background: #fef2f2;
 }
 .train-known {
-  padding: 0;
-  border: 0;
-  background: none;
+  padding: 6px 16px;
+  border: 1px solid #c4cad2;
+  border-radius: 6px;
+  background: #fff;
   font: inherit;
   font-size: 14px;
-  color: #2563eb;
-  text-decoration: underline;
+  color: #1f2937;
   cursor: pointer;
 }
 .train-known:disabled {
@@ -1951,16 +1990,15 @@ body,
   line-height: 1.3;
   font-weight: 500;
   color: #55606e;
-  text-decoration: none;
-}
-.site-heading .site-heading-parent:hover {
   text-decoration: underline;
 }
-/* phones: a small, tight trail, kept clear of the language flag (a very long one wraps) */
+.site-heading .site-heading-parent:hover {
+  color: #1f2937;
+}
+/* phones: a small, tight trail (a very long one wraps) */
 @media (max-width: 700px) {
   .site-heading {
     gap: 2px 5px;
-    padding-right: 36px;
   }
   .site-heading h1,
   .site-heading h2,

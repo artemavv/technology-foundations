@@ -113,6 +113,14 @@ const MIGRATIONS = [
   ) WITHOUT ROWID;
   CREATE INDEX user_known_chrono ON user_known(chrono_id);
   `,
+  // 5: public nickname, shown instead of the login in competition tables. Set at
+  // registration; NULL for older accounts and admins (they show their login).
+  // nickname_key is the case-folded form, so uniqueness also holds for non-ASCII letters.
+  `
+  ALTER TABLE users ADD COLUMN nickname TEXT;
+  ALTER TABLE users ADD COLUMN nickname_key TEXT;
+  CREATE UNIQUE INDEX users_nickname_key ON users(nickname_key);
+  `,
 ]
 
 // better-sqlite3 is loaded here, not at the top, so `vite build` and the rest of

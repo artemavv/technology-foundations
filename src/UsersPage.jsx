@@ -15,6 +15,7 @@ function UserRow({ user, busy, onApprove, onRevoke, onDelete }) {
     <section className="tr-row user-row">
       <div className="user-info">
         <strong>{user.login}</strong>
+        {user.nickname && <span className="tr-time">{t('usersNickname', user.nickname)}</span>}
         <span className="tr-time">{t('usersRegistered', when(user.createdAt))}</span>
         {user.lastLoginAt && <span className="tr-time">{t('usersLastLogin', when(user.lastLoginAt))}</span>}
       </div>

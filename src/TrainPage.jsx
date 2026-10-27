@@ -7,11 +7,10 @@
 // end or with the Finish button, so each run updates the statistics.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUser } from './auth.js'
-import LangSwitcher from './components/LangSwitcher.jsx'
 import SiteHeading from './components/SiteHeading.jsx'
 import { useLang } from './i18n.jsx'
 import { storeFor } from './memoryStore.js'
-import { AUTO_NEXT_MS, TOLERANCE, UNITS, YEARS_ABOVE, cleanNumber, isClose, shuffle, toMya } from './training.js'
+import { AUTO_NEXT_MS, TOLERANCE, UNITS, YEARS_ABOVE, cleanNumber, isClose, isExact, shuffle, toMya } from './training.js'
 
 export default function TrainPage() {
   const { t, lang, pick } = useLang()
@@ -20,7 +19,7 @@ export default function TrainPage() {
   const [index, setIndex] = useState(0)
   const [value, setValue] = useState('')
   const [unit, setUnit] = useState('Mya') // the last one used is kept
-  const [result, setResult] = useState(null) // null while answering, then { correct, given }
+  const [result, setResult] = useState(null) // null while answering, then { correct, exact, given }
   const [answered, setAnswered] = useState(0)
   const [summary, setSummary] = useState(null) // the finished run: { total, correct }
   const [empty, setEmpty] = useState(false) // nothing to train on
@@ -80,9 +79,13 @@ export default function TrainPage() {
     const skipped = value === ''
     if (!skipped && !valid) return
     const correct = !skipped && isClose(toMya(number, usedUnit), current.mya)
+    const exact = correct && isExact(toMya(number, usedUnit), current.mya)
     // "X years ago" typed where the answer is X BC: the two differ by 2000, a common slip
     const bcSlip = !correct && !skipped && years && isClose(toMya(number, 'BC'), current.mya)
-    setResult({ correct, skipped, bcSlip, given: skipped ? null : `${number} ${years ? t('trainYearsAgo') : unit}` })
+    // the number would have been right with another unit (Mya typed where it is Kya)
+    const scaleSlip =
+      !correct && !skipped && !years && UNITS.find((u) => u !== unit && isClose(toMya(number, u), current.mya))
+    setResult({ correct, exact, skipped, bcSlip, scaleSlip, number, given: skipped ? null : `${number} ${years ? t('trainYearsAgo') : unit}` })
     setAnswered((n) => n + 1)
     const answer = {
       seq: index,
@@ -184,7 +187,6 @@ export default function TrainPage() {
   if (loading) return <p className="loading">{t('loading')}</p>
   return (
     <div className="tr-page memory-page">
-      <LangSwitcher />
       {header}
       {error && <p className="edit-error" role="alert">{error}</p>}
       {empty && <p className="loading">{t('trainNoChronos')}</p>}
@@ -250,23 +252,21 @@ export default function TrainPage() {
           </div>
           {result && (
             <div
-              className={`train-result ${result.correct ? 'train-ok' : result.skipped ? 'train-skip' : 'train-bad'}`}
+              className={`train-result ${result.correct ? 'train-ok' : result.skipped ? 'train-skip' : result.scaleSlip ? 'train-almost' : 'train-bad'}`}
               role="status"
             >
-              <strong>{t(result.skipped ? 'trainSkipped' : result.correct ? 'trainCorrect' : 'trainWrong')}</strong>
+              <strong>{t(result.skipped ? 'trainSkipped' : result.correct ? (result.exact ? 'trainCorrect' : 'trainAlmost') : result.scaleSlip ? 'trainAlmost' : 'trainWrong')}</strong>
               <span>{t('trainRightAnswer', current.time)}</span>
               {!result.skipped && <span>{t('trainYourAnswer', result.given)}</span>}
+              {result.scaleSlip && (
+                <span className="train-note">{t('trainScaleNote', result.number, result.scaleSlip)}</span>
+              )}
               {result.bcSlip && (
                 <span className="train-note">{t('trainBcNote', current.time, Math.round(current.mya * 1e6))}</span>
               )}
             </div>
           )}
           <div className="train-buttons">
-            {answered > 0 && !(isLast && result) && (
-              <button type="button" onClick={finish} disabled={busy}>
-                {t('trainFinish')}
-              </button>
-            )}
             <button
               ref={buttonRef}
               type="submit"
@@ -282,6 +282,13 @@ export default function TrainPage() {
           </button>
           <p className="edit-hint">{t('trainHint', Math.round(TOLERANCE * 100))}</p>
           <p className="edit-hint">{t('trainSkipHint')}</p>
+          {answered > 0 && !(isLast && result) && (
+            <div className="train-buttons">
+              <button type="button" onClick={finish} disabled={busy}>
+                {t('trainFinish')}
+              </button>
+            </div>
+          )}
         </form>
       )}
     </div>

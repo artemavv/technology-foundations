@@ -1,9 +1,11 @@
 // Vite plugin: user accounts, the memory line (chronos) and training statistics
 // (dev and `vite preview`). Data lives in SQLite (data/app.db, or $DB_PATH).
-//   POST /api/auth/register   { login, password } -> account is 'pending' until an admin approves it
+//   POST /api/auth/register   { login, password, nickname } -> account is 'pending' until an admin approves it
 //   POST /api/auth/login      { login, password } -> session cookie; 403 { code: 'pending' } while pending
 //   POST /api/auth/logout
-//   GET  /api/auth/me         { user: { id, login, isAdmin } | null }
+//   GET  /api/auth/me         { user: { id, login, nickname, isAdmin } | null }
+//   PUT  /api/auth/profile    { nickname }                    signed in
+//   POST /api/auth/password   { current, password }           signed in; other sessions end
 //   GET    /api/admin/users?status=pending|approved   admin
 //   POST   /api/admin/users/:id/approve | /revoke     admin
 //   DELETE /api/admin/users/:id                       admin (reject or delete; cascades)
@@ -19,12 +21,15 @@ import { openDb } from './db.js'
 import {
   COOKIE,
   LOGIN_RE,
+  NICKNAME_RE,
   RESERVED_LOGINS,
   clearCookie,
   createSession,
   csrfOk,
+  destroyOtherSessions,
   destroySession,
   hashPassword,
+  nicknameKey,
   purgeExpiredSessions,
   sessionCookie,
   sessionUser,
@@ -38,7 +43,8 @@ const MAX_PENDING_USERS = 200
 const MIN_PASSWORD = 6
 const FAILED_LOGIN_IP = { count: 10, windowMs: 15 * 60 * 1000 }
 const FAILED_LOGIN_NAME = { count: 5, windowMs: 15 * 60 * 1000 }
-const REGISTER_LIMIT = { count: 5, windowMs: 60 * 60 * 1000 } // per IP
+// per IP; $REGISTER_LIMIT raises it (the smoke test registers more often than a visitor would)
+const REGISTER_LIMIT = { count: Number(process.env.REGISTER_LIMIT) || 5, windowMs: 60 * 60 * 1000 }
 
 // everything this plugin answers; /api/admin/check and the card routes stay with adminApi
 const OURS = /^\/api\/(auth|me|memory|chronos|training|admin\/users|admin\/chronos)(\/|$)/
@@ -46,6 +52,7 @@ const OURS = /^\/api\/(auth|me|memory|chronos|training|admin\/users|admin\/chron
 const userJson = (r) => ({
   id: r.id,
   login: r.login,
+  nickname: r.nickname,
   status: r.status,
   createdAt: r.created_at,
   approvedAt: r.approved_at,
@@ -108,6 +115,23 @@ export default function accountsApi({ dbFile } = {}) {
     send(res, 401, { error: 'Unauthorized' })
   }
 
+  // a nickname as typed -> { nickname, key }, or { status, error }; `selfId` is the account that
+  // changes its own nickname (it may keep, say, a nickname equal to its own login)
+  const checkNickname = (db, raw, selfId = 0) => {
+    // runs of spaces count as one, so "A  B" and "A B" are the same nickname
+    const nickname = typeof raw === 'string' ? raw.trim().replace(/ {2,}/g, ' ') : ''
+    if (!NICKNAME_RE.test(nickname)) {
+      return { status: 400, error: 'Nickname must be 2 to 24 letters, digits, spaces, dots, dashes or underscores' }
+    }
+    const key = nicknameKey(nickname)
+    if (RESERVED_LOGINS.includes(key)) return { status: 400, error: 'This nickname is not available' }
+    // a nickname that is somebody else's login would be confusing in a table
+    if (db.prepare('SELECT 1 FROM users WHERE (login = ? OR nickname_key = ?) AND id != ?').get(key, key, selfId)) {
+      return { status: 409, error: 'This nickname is taken' }
+    }
+    return { nickname, key }
+  }
+
   const register = async (req, res, db) => {
     const body = await parseJsonBody(req, res)
     if (!body) return
@@ -121,6 +145,9 @@ export default function accountsApi({ dbFile } = {}) {
     if (RESERVED_LOGINS.includes(login.toLowerCase())) {
       return send(res, 400, { error: 'This login is not available' })
     }
+    const nick = checkNickname(db, body.nickname)
+    if (nick.error) return send(res, nick.status, { error: nick.error })
+    const { nickname, key: nickKey } = nick
     if (typeof body.password !== 'string' || body.password.length < MIN_PASSWORD) {
       return send(res, 400, { error: `Password must be at least ${MIN_PASSWORD} characters` })
     }
@@ -129,10 +156,15 @@ export default function accountsApi({ dbFile } = {}) {
     const { hash, salt, params } = await hashPassword(body.password)
     try {
       db.prepare(
-        'INSERT INTO users (login, pw_hash, pw_salt, pw_params, status, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-      ).run(login, hash, salt, params, 'pending', Date.now())
+        `INSERT INTO users (login, nickname, nickname_key, pw_hash, pw_salt, pw_params, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(login, nickname, nickKey, hash, salt, params, 'pending', Date.now())
     } catch (e) {
-      if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') return send(res, 409, { error: 'This login is taken' })
+      if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        // the login is checked by the NOCASE column, the nickname by its index
+        const isNick = /nickname_key/.test(e.message)
+        return send(res, 409, { error: isNick ? 'This nickname is taken' : 'This login is taken' })
+      }
       throw e
     }
     send(res, 201, { status: 'pending' })
@@ -165,6 +197,48 @@ export default function accountsApi({ dbFile } = {}) {
     db.prepare('UPDATE users SET last_login_at = ? WHERE id = ?').run(Date.now(), row.id)
     res.setHeader('Set-Cookie', sessionCookie(req, createSession(db, row.id)))
     send(res, 200, { login: row.login })
+  }
+
+  const updateProfile = async (req, res, db, user) => {
+    if (!user) return deny(res)
+    const body = await parseJsonBody(req, res)
+    if (!body) return
+    const nick = checkNickname(db, body.nickname, user.id)
+    if (nick.error) return send(res, nick.status, { error: nick.error })
+    try {
+      db.prepare('UPDATE users SET nickname = ?, nickname_key = ? WHERE id = ?').run(nick.nickname, nick.key, user.id)
+    } catch (e) {
+      if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') return send(res, 409, { error: 'This nickname is taken' })
+      throw e
+    }
+    send(res, 200, { nickname: nick.nickname })
+  }
+
+  const changePassword = async (req, res, db, user) => {
+    if (!user) return deny(res)
+    const body = await parseJsonBody(req, res)
+    if (!body) return
+    const ip = clientIp(req)
+    const name = user.login.toLowerCase()
+    if (failedByIp.blocked(ip) || failedByName.blocked(name)) {
+      res.setHeader('Retry-After', Math.max(failedByIp.retryAfter(ip), failedByName.retryAfter(name)))
+      return send(res, 429, { error: 'Too many failed attempts, try again later' })
+    }
+    const row = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id)
+    // a stolen session alone must not be enough to take the account over
+    if (!(await verifyPassword(typeof body.current === 'string' ? body.current : '', row))) {
+      failedByIp.hit(ip)
+      failedByName.hit(name)
+      await delay(500)
+      return send(res, 400, { error: 'The current password is wrong' })
+    }
+    if (typeof body.password !== 'string' || body.password.length < MIN_PASSWORD) {
+      return send(res, 400, { error: `Password must be at least ${MIN_PASSWORD} characters` })
+    }
+    const { hash, salt, params } = await hashPassword(body.password)
+    db.prepare('UPDATE users SET pw_hash = ?, pw_salt = ?, pw_params = ? WHERE id = ?').run(hash, salt, params, user.id)
+    destroyOtherSessions(db, req, user.id)
+    send(res, 204)
   }
 
   const adminUsers = async (req, res, url, db) => {
@@ -227,6 +301,8 @@ export default function accountsApi({ dbFile } = {}) {
       res.setHeader('Set-Cookie', clearCookie(req))
       return send(res, 204)
     }
+    if (req.method === 'PUT' && url === '/api/auth/profile') return updateProfile(req, res, db, user)
+    if (req.method === 'POST' && url === '/api/auth/password') return changePassword(req, res, db, user)
     if (req.method === 'GET' && url === '/api/auth/me') {
       return send(res, 200, { user: ctx.user })
     }

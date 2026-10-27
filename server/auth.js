@@ -10,6 +10,9 @@ const PARAMS_TEXT = `scrypt:${PARAMS.N}:${PARAMS.r}:${PARAMS.p}`
 
 export const RESERVED_LOGINS = ['admin', 'administrator', 'root']
 export const LOGIN_RE = /^[A-Za-z0-9_.-]{3,32}$/
+// a nickname may use letters of any alphabet, digits, spaces, dots, dashes and underscores
+export const NICKNAME_RE = /^[\p{L}\p{N}][\p{L}\p{N} _.-]{0,22}[\p{L}\p{N}]$/u
+export const nicknameKey = (nickname) => nickname.normalize('NFKC').toLowerCase()
 
 const derive = (password, salt, { N, r, p }) =>
   new Promise((ok, fail) =>
@@ -49,6 +52,12 @@ export function createSession(db, userId) {
   return token
 }
 
+// after a password change: every session of the user but the one making the request
+export function destroyOtherSessions(db, req, userId) {
+  const token = parseCookies(req)[COOKIE]
+  db.prepare('DELETE FROM sessions WHERE user_id = ? AND token_hash != ?').run(userId, token ? sha256(token) : '')
+}
+
 export function destroySession(db, req) {
   const token = parseCookies(req)[COOKIE]
   if (token) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(sha256(token))
@@ -63,7 +72,7 @@ export function sessionUser(db, req) {
   const hash = sha256(token)
   const row = db
     .prepare(
-      `SELECT u.id, u.login, u.is_admin, s.last_seen_at FROM sessions s JOIN users u ON u.id = s.user_id
+      `SELECT u.id, u.login, u.nickname, u.is_admin, s.last_seen_at FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token_hash = ? AND s.expires_at > ? AND u.status = 'approved'`,
     )
     .get(hash, now)
@@ -75,7 +84,7 @@ export function sessionUser(db, req) {
       hash,
     )
   }
-  return { id: row.id, login: row.login, isAdmin: Boolean(row.is_admin) }
+  return { id: row.id, login: row.login, nickname: row.nickname, isAdmin: Boolean(row.is_admin) }
 }
 
 export function purgeExpiredSessions(db) {

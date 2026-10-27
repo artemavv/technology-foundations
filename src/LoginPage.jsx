@@ -1,15 +1,20 @@
 // Log in or register. A new account is 'pending' until an admin approves it.
 import { useEffect, useState } from 'react'
+import logo from './assets/icon-43.png'
 import { login, logout, register, safeNext, useUser } from './auth.js'
-import LangSwitcher from './components/LangSwitcher.jsx'
 import { useLang } from './i18n.jsx'
 
 export default function LoginPage() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const { user, loading, refresh } = useUser()
-  const [mode, setMode] = useState('login') // 'login' | 'register'
+  // 'login' | 'register'; ?mode=register opens the registration tab
+  const [mode, setMode] = useState(() =>
+    new URLSearchParams(window.location.search).get('mode') === 'register' ? 'register' : 'login',
+  )
   const [name, setName] = useState('')
+  const [nickname, setNickname] = useState('')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [registered, setRegistered] = useState(false)
@@ -21,13 +26,18 @@ export default function LoginPage() {
 
   const submit = async (e) => {
     e.preventDefault()
+    if (mode === 'register' && password !== confirm) {
+      setError(t('accountPasswordMismatch'))
+      return
+    }
     setBusy(true)
     setError('')
     try {
       if (mode === 'register') {
-        await register(name, password)
+        await register(name, password, nickname)
         setRegistered(true)
         setPassword('')
+        setConfirm('')
       } else {
         await login(name, password)
         window.location.assign(next)
@@ -48,8 +58,11 @@ export default function LoginPage() {
   if (loading) return <p className="loading">{t('loading')}</p>
   return (
     <div className="login-page">
-      <LangSwitcher />
-      <h1>{t('siteTitle')}</h1>
+      <h1>
+        <a href={`/?lang=${lang}`} title={t('siteTitle')}>
+          <img src={logo} width="43" height="26" alt={t('siteTitle')} />
+        </a>
+      </h1>
       {user ? (
         <div className="login-box">
           <p>{t('accountSignedInAs', user.login)}</p>
@@ -93,6 +106,20 @@ export default function LoginPage() {
                 />
                 {mode === 'register' && <span className="edit-hint">{t('accountLoginHint')}</span>}
               </label>
+              {mode === 'register' && (
+                <label>
+                  {t('accountNickname')}
+                  <input
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    autoComplete="nickname"
+                    minLength={2}
+                    maxLength={24}
+                    required
+                  />
+                  <span className="edit-hint">{t('accountNicknameHint')}</span>
+                </label>
+              )}
               <label>
                 {t('accountPassword')}
                 <input
@@ -105,6 +132,18 @@ export default function LoginPage() {
                 />
                 {mode === 'register' && <span className="edit-hint">{t('accountPasswordHint')}</span>}
               </label>
+              {mode === 'register' && (
+                <label>
+                  {t('accountPasswordConfirm')}
+                  <input
+                    type="password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                  />
+                </label>
+              )}
               {error && <p className="edit-error" role="alert">{error}</p>}
               <div className="edit-buttons">
                 <button type="submit" className="primary" disabled={busy}>
@@ -115,9 +154,6 @@ export default function LoginPage() {
           )}
         </form>
       )}
-      <p className="login-back">
-        <a href="/">{t('memoryBackToTimeline')}</a>
-      </p>
     </div>
   )
 }

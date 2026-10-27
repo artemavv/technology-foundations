@@ -20,6 +20,7 @@ export default defineConfig(() => {
           login: 'login.html',
           memory: 'memory.html',
           myChronos: 'my-chronos.html',
+          profile: 'profile.html',
           train: 'train.html',
           users: 'users.html',
           chronos: 'chronos.html',
