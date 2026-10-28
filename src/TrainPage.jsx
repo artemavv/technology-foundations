@@ -5,12 +5,16 @@
 // Every answer is recorded in a training run (server/trainingApi.js, or the browser's
 // storage for a visitor without an account: memoryStore.js), which is finished at the
 // end or with the Finish button, so each run updates the statistics.
+// With ?mode=exam it is an exam instead: only the memorized chronos that are not passed yet, at
+// most EXAM_MS for each question (an answer typed by then is checked, otherwise the question is
+// lost), no showing answers, no marking as known. A correct answer passes the chrono and earns
+// a competition point; the server grades the answers (server/trainingApi.js).
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUser } from './auth.js'
 import SiteHeading from './components/SiteHeading.jsx'
 import { useLang } from './i18n.jsx'
 import { storeFor } from './memoryStore.js'
-import { AUTO_NEXT_MS, TOLERANCE, UNITS, YEARS_ABOVE, cleanNumber, isClose, isExact, shuffle, toMya } from './training.js'
+import { AUTO_NEXT_MS, EXAM_MIN, EXAM_MS, TOLERANCE, UNITS, YEARS_ABOVE, cleanNumber, isClose, isExact, shuffle, toMya } from './training.js'
 
 export default function TrainPage() {
   const { t, lang, pick } = useLang()
@@ -30,12 +34,13 @@ export default function TrainPage() {
   const shownAt = useRef(0) // when the current question appeared
   const saving = useRef(Promise.resolve()) // answers are saved in order; finishing waits for them
   const store = storeFor(user)
+  const exam = new URLSearchParams(window.location.search).get('mode') === 'exam'
   const buttonRef = useRef(null)
   const unitRefs = useRef([])
 
   useEffect(() => {
-    document.title = `${t('siteTitle')} — ${t('trainTitle')}`
-  }, [t])
+    document.title = `${t('siteTitle')} — ${t(exam ? 'examTitle' : 'trainTitle')}`
+  }, [t, exam])
 
   const start = useCallback(async () => {
     setBusy(true)
@@ -48,7 +53,7 @@ export default function TrainPage() {
     setResult(null)
     setAnswered(0)
     try {
-      const started = await store.startRun()
+      const started = await store.startRun(exam ? 'exam' : undefined)
       setRun({ ...started, chronos: shuffle(started.chronos) })
       shownAt.current = Date.now()
     } catch (err) {
@@ -57,11 +62,12 @@ export default function TrainPage() {
       else setError(err.message)
     }
     setBusy(false)
-  }, [store])
+  }, [store, exam])
 
   // started once per visit; the ref keeps StrictMode's second effect run from starting another run
   useEffect(() => {
     if (loading) return
+    if (exam && !user) return // the exam is for accounts: the page says so
     if (startedRef.current) return
     startedRef.current = true
     start()
@@ -77,6 +83,7 @@ export default function TrainPage() {
 
   const check = () => {
     const skipped = value === ''
+    if (exam && skipped) return // no showing the answer in an exam
     if (!skipped && !valid) return
     const correct = !skipped && isClose(toMya(number, usedUnit), current.mya)
     const exact = correct && isExact(toMya(number, usedUnit), current.mya)
@@ -99,6 +106,38 @@ export default function TrainPage() {
       .then(() => store.saveAnswer(run, answer))
       .catch((err) => setError(err.message))
   }
+
+  // exam: the time for this question is up. What is typed counts; an empty field loses the question.
+  const timeUp = () => {
+    if (value !== '' && valid) return check()
+    setResult({ timeout: true, correct: false })
+    setAnswered((n) => n + 1)
+    const answer = {
+      seq: index,
+      chronoId: current.id,
+      correct: false,
+      skipped: false,
+      responseMs: EXAM_MS,
+      answer: { timeout: true },
+    }
+    saving.current = saving.current
+      .then(() => store.saveAnswer(run, answer))
+      .catch((err) => setError(err.message))
+  }
+  const timeUpRef = useRef(timeUp)
+  timeUpRef.current = timeUp // always the latest, with the current value of the field
+  const [secondsLeft, setSecondsLeft] = useState(EXAM_MS / 1000)
+  useEffect(() => {
+    if (!exam || !run || summary || result) return
+    const deadline = Date.now() + EXAM_MS
+    setSecondsLeft(EXAM_MS / 1000)
+    const tick = setInterval(() => setSecondsLeft(Math.max(0, Math.ceil((deadline - Date.now()) / 1000))), 200)
+    const timer = setTimeout(() => timeUpRef.current(), EXAM_MS)
+    return () => {
+      clearTimeout(timer)
+      clearInterval(tick)
+    }
+  }, [exam, run, index, summary, result])
 
   const finish = async () => {
     setBusy(true)
@@ -123,7 +162,7 @@ export default function TrainPage() {
   // a correct answer, or a shown one, moves on by itself (not past the last question:
   // finishing ends the run); pressing Next or Finish first changes `result`, `index` or
   // `summary`, which cancels the timer
-  const autoNext = Boolean(result?.correct || result?.skipped) && !isLast && !summary
+  const autoNext = Boolean(result?.correct || result?.skipped || result?.timeout) && !isLast && !summary
   useEffect(() => {
     if (!autoNext) return
     const timer = setTimeout(next, AUTO_NEXT_MS)
@@ -177,7 +216,7 @@ export default function TrainPage() {
 
   const header = (
     <header className="tr-header">
-      <SiteHeading sub={t('trainTitle')} />
+      <SiteHeading sub={t(exam ? 'examTitle' : 'trainTitle')} />
       <div className="memory-account">
         <a href={`/my-chronos.html?lang=${lang}`}>{t('myChronos')}</a>
       </div>
@@ -189,29 +228,53 @@ export default function TrainPage() {
     <div className="tr-page memory-page">
       {header}
       {error && <p className="edit-error" role="alert">{error}</p>}
-      {empty && <p className="loading">{t('trainNoChronos')}</p>}
+      {exam && !user && (
+        <p className="loading">
+          {t('examGuest')} <a href={`/login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}>{t('accountLogIn')}</a>
+        </p>
+      )}
+      {empty && <p className="loading">{(exam ? t('examNeedMin', EXAM_MIN) : t('trainNoChronos'))}</p>}
       {allKnown && (
         <p className="loading">
           {t('trainAllKnown')} <a href={`/my-chronos.html?lang=${lang}`}>{t('myChronos')}</a>
         </p>
       )}
-      {!run && !empty && !allKnown && !error && <p className="loading">{t('loading')}</p>}
+      {!run && !empty && !allKnown && !error && !(exam && !user) && <p className="loading">{t('loading')}</p>}
       {run && summary && (
         <div className="train-box" role="status">
-          <h2 className="train-title">{t('trainDone')}</h2>
-          {summary.total > 0 && <p className="train-score">{t('trainScore', summary.correct, summary.total)}</p>}
-          {summary.skipped > 0 && <p className="train-skipped">{t('trainSkippedCount', summary.skipped)}</p>}
-          {summary.total === 0 && summary.skipped === 0 && <p className="train-skipped">{t('trainNoAnswers')}</p>}
+          <h2 className="train-title">{t(exam ? 'examDone' : 'trainDone')}</h2>
+          {exam && <p className="train-score">{t('examScore', summary.correct, summary.total)}</p>}
+          {exam && summary.correct > 0 && <p className="train-skipped">{t('examPoints', summary.correct)}</p>}
+          {!exam && summary.total > 0 && <p className="train-score">{t('trainScore', summary.correct, summary.total)}</p>}
+          {!exam && summary.skipped > 0 && <p className="train-skipped">{t('trainSkippedCount', summary.skipped)}</p>}
+          {!exam && summary.total === 0 && summary.skipped === 0 && <p className="train-skipped">{t('trainNoAnswers')}</p>}
           <div className="train-buttons">
-            <button type="button" className="primary" onClick={again} disabled={busy}>
-              {t('trainAgain')}
-            </button>
+            {exam ? (
+              <a className="primary" href={`/my-chronos.html?lang=${lang}`}>
+                {t('myChronos')}
+              </a>
+            ) : (
+              <button type="button" className="primary" onClick={again} disabled={busy}>
+                {t('trainAgain')}
+              </button>
+            )}
+            <a href={`/memory.html?lang=${lang}`}>{t('trainToChronos')}</a>
           </div>
         </div>
       )}
       {run && !summary && (
         <form className="train-box" onSubmit={submit}>
           <p className="train-progress">{t('trainProgress', index + 1, run.chronos.length)}</p>
+          {exam && (
+            <>
+              <p className="exam-left" aria-hidden="true">
+                {result ? '\u00a0' : t('examSecondsLeft', secondsLeft)}
+              </p>
+              <div className="exam-timer" aria-hidden="true">
+                {!result && <div key={index} className="exam-timer-bar" style={{ '--exam-ms': `${EXAM_MS}ms` }} />}
+              </div>
+            </>
+          )}
           <h2 className="train-title">{current.personal ? current.title : pick(current.title)}</h2>
           <div className="train-answer">
             <input
@@ -252,12 +315,12 @@ export default function TrainPage() {
           </div>
           {result && (
             <div
-              className={`train-result ${result.correct ? 'train-ok' : result.skipped ? 'train-skip' : result.scaleSlip ? 'train-almost' : 'train-bad'}`}
+              className={`train-result ${result.timeout ? 'train-bad' : result.correct ? 'train-ok' : result.skipped ? 'train-skip' : result.scaleSlip ? 'train-almost' : 'train-bad'}`}
               role="status"
             >
-              <strong>{t(result.skipped ? 'trainSkipped' : result.correct ? (result.exact ? 'trainCorrect' : 'trainAlmost') : result.scaleSlip ? 'trainAlmost' : 'trainWrong')}</strong>
+              <strong>{t(result.timeout ? 'examTimeUp' : result.skipped ? 'trainSkipped' : result.correct ? (result.exact ? 'trainCorrect' : 'trainAlmost') : result.scaleSlip ? 'trainAlmost' : 'trainWrong')}</strong>
               <span>{t('trainRightAnswer', current.time)}</span>
-              {!result.skipped && <span>{t('trainYourAnswer', result.given)}</span>}
+              {!result.skipped && !result.timeout && <span>{t('trainYourAnswer', result.given)}</span>}
               {result.scaleSlip && (
                 <span className="train-note">{t('trainScaleNote', result.number, result.scaleSlip)}</span>
               )}
@@ -272,17 +335,19 @@ export default function TrainPage() {
               type="submit"
               className={`primary${autoNext ? ' train-auto' : ''}`}
               style={autoNext ? { '--auto-ms': `${AUTO_NEXT_MS}ms` } : undefined}
-              disabled={busy || (!result && value !== '' && !valid)}
+              disabled={busy || (!result && (exam ? !valid : value !== '' && !valid))}
             >
-              {t(result ? (isLast ? 'trainFinish' : 'trainNext') : value === '' ? 'trainShowAnswer' : 'trainCheck')}
+              {t(result ? (isLast ? (exam ? 'examFinish' : 'trainFinish') : 'trainNext') : value === '' && !exam ? 'trainShowAnswer' : 'trainCheck')}
             </button>
           </div>
-          <button type="button" className="train-known" onClick={markKnown} disabled={busy}>
-            {t('trainMarkKnown')}
-          </button>
+          {!exam && (
+            <button type="button" className="train-known" onClick={markKnown} disabled={busy}>
+              {t('trainMarkKnown')}
+            </button>
+          )}
           <p className="edit-hint">{t('trainHint', Math.round(TOLERANCE * 100))}</p>
-          <p className="edit-hint">{t('trainSkipHint')}</p>
-          {answered > 0 && !(isLast && result) && (
+          <p className="edit-hint">{exam ? t('examHint', EXAM_MS / 1000) : t('trainSkipHint')}</p>
+          {!exam && answered > 0 && !(isLast && result) && (
             <div className="train-buttons">
               <button type="button" onClick={finish} disabled={busy}>
                 {t('trainFinish')}

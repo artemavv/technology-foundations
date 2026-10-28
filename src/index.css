@@ -551,7 +551,8 @@ body,
   gap: 8px;
 }
 
-.edit-buttons button {
+.edit-buttons button,
+.edit-chrono-missing button {
   font: inherit;
   font-size: 14px;
   padding: 6px 14px;
@@ -1274,7 +1275,7 @@ body,
 }
 
 /* ---- accounts and the memory line ---- */
-/* round link beside the language flag */
+/* "Chronos" button beside the language flag */
 .account-link {
   position: fixed;
   top: 8px;
@@ -1283,23 +1284,20 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
   height: 28px;
+  padding: 0 12px;
   border: 2px solid #fff;
-  border-radius: 50%;
-  background: #1f2937;
+  border-radius: 14px;
+  background: #000;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   text-decoration: none;
   box-shadow: 0 1px 5px rgba(15, 23, 42, 0.4);
 }
 .account-link:hover {
   box-shadow: 0 0 0 2px #676767;
-}
-.account-link svg {
-  width: 16px;
-  height: 16px;
 }
 .m-header .account-link {
   right: calc(var(--units-width) + 48px);
@@ -1433,6 +1431,56 @@ body,
 .memory-toolbar .memory-train-btn:hover:not(:disabled):not(.memory-mine-btn) {
   background: #111827;
 }
+.memory-toolbar .memory-exam-btn {
+  background: #166534;
+}
+/* next to Start training, at the right end (it needs the specificity to beat Start's auto margin) */
+.memory-toolbar .memory-train-btn.memory-exam-btn {
+  margin-left: 0;
+}
+.memory-toolbar .memory-train-btn:hover:not(:disabled).memory-exam-btn {
+  background: #14532d;
+}
+.memory-toolbar .memory-exam-inactive {
+  background: #9aa3ae; /* looks inactive, but can be clicked to read why */
+}
+.memory-toolbar .memory-train-btn:hover:not(:disabled).memory-exam-inactive {
+  background: #8c95a1;
+}
+/* a narrow screen: Start training goes to a second line, at the left, with Exam at the right end */
+.memory-toolbar-break {
+  display: none;
+}
+@media (max-width: 950px) {
+  .memory-toolbar-break {
+    display: block;
+    flex-basis: 100%;
+    height: 0;
+    margin: -12px 0 0; /* the row gap above it is not added twice */
+  }
+  .memory-toolbar .memory-train-btn:not(.memory-mine-btn) {
+    margin-left: 0;
+  }
+  .memory-toolbar .memory-train-btn.memory-exam-btn {
+    margin-left: auto; /* Exam stays at the right end of the second line */
+  }
+}
+/* a phone: the buttons are one column, centered */
+@media (max-width: 470px) {
+  .memory-toolbar {
+    flex-direction: column;
+    align-items: center;
+  }
+  .memory-toolbar-break {
+    display: none;
+  }
+  .memory-page .memory-toolbar > .memory-train-btn,
+  .memory-page .memory-toolbar > .memory-add-btn {
+    width: min(100%, 300px);
+    min-width: 0;
+    margin: 0;
+  }
+}
 .memory-toolbar .memory-train-btn:disabled {
   background: #9aa3ae;
   cursor: default;
@@ -1454,6 +1502,19 @@ body,
 .memory-account button {
   padding: 3px 10px;
   font-size: 13px;
+}
+/* the Log in link of a guest looks like the Log out button */
+.memory-account .memory-login {
+  padding: 3px 10px;
+  border: 1px solid #c4cad2;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2937;
+  font-size: 13px;
+  text-decoration: none;
+}
+.memory-account .memory-login:hover {
+  background: #f3f4f6;
 }
 .memory-toolbar .primary,
 .tr-header > .primary {
@@ -1502,7 +1563,7 @@ body,
   background: #e3edfd;
   box-shadow: inset 3px 0 0 #2563eb;
 }
-/* the card icon beside the text block; a long title wraps inside the block, not under the icon */
+/* the icon slot beside the text block; a long title wraps inside the block, not under the icon */
 .memory-text {
   display: flex;
   flex: 1;
@@ -1510,11 +1571,38 @@ body,
   gap: 10px;
   min-width: 0;
 }
+/* training stars before the title: empty, yellow per correct answer up to three, then orange one by one */
+.memory-stars {
+  display: inline-flex;
+  flex: 0 0 48px;
+  justify-content: center;
+  gap: 1px;
+  margin-top: 1px;
+  font-size: 15px;
+  line-height: 1.3;
+  color: #d5d9df;
+  cursor: default;
+}
+.memory-stars .memory-star-on {
+  color: #facc15;
+}
+.memory-stars .memory-star-hot {
+  color: #ff9e5a;
+}
+.memory-passed {
+  flex: 0 0 48px;
+  width: 48px;
+  font-size: 30px;
+  line-height: 1;
+  text-align: center;
+  color: #16a34a;
+  cursor: default;
+}
 .memory-main {
   flex: 1;
   min-width: 0;
 }
-/* the icon linking to the card; rows without a card keep an empty slot so titles line up */
+/* the Edit icon of own chronos; the other rows keep an empty slot so titles line up */
 .memory-card,
 .memory-card-slot {
   flex: 0 0 18px;
@@ -1539,6 +1627,20 @@ body,
 }
 .memory-title-edit:hover {
   text-decoration: underline;
+}
+/* on the Chronos page the titles of chronos without a card stand out from the ones that open one */
+.memory-no-card {
+  color: #434aad;
+}
+/* the title of a chrono with a card is a button looking like plain text */
+.memory-title-card {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  text-align: left;
 }
 .memory-card.memory-edit-btn {
   color: #55606e;
@@ -1651,6 +1753,16 @@ body,
   .memory-text {
     gap: 6px;
   }
+  .memory-stars {
+    flex-basis: 40px;
+    font-size: 12px;
+    margin-top: 0;
+  }
+  .memory-passed {
+    flex-basis: 40px;
+    width: 40px;
+    font-size: 24px;
+  }
   .memory-card,
   .memory-card-slot {
     flex-basis: 16px;
@@ -1678,7 +1790,6 @@ body,
     height: 16px;
   }
 }
-.memory-account a,
 .memory-card,
 
 /* a card in a popup */
@@ -1813,7 +1924,8 @@ body,
   display: flex;
   gap: 8px;
 }
-.train-buttons button {
+.train-buttons button,
+.train-buttons a {
   padding: 8px 22px;
   border: 1px solid #c4cad2;
   border-radius: 6px;
@@ -1821,7 +1933,38 @@ body,
   font: inherit;
   font-size: 15px;
   color: #1f2937;
+  text-decoration: none;
   cursor: pointer;
+}
+/* exam: the time left for the question runs out along a bar */
+.exam-left {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #6b7280;
+}
+.exam-timer {
+  align-self: stretch; /* the box centres its children, which would leave the bar no width */
+  height: 8px;
+  margin: 0;
+  border-radius: 3px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+.exam-timer-bar {
+  height: 100%;
+  background: #9ca3af;
+  transform-origin: left;
+  animation: exam-timer var(--exam-ms) linear forwards;
+}
+@keyframes exam-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 .train-buttons .primary {
   background: #1f2937;
@@ -2013,6 +2156,76 @@ body,
     width: 32px;
     height: auto;
   }
+}
+
+/* Players */
+.players-table {
+  width: 100%;
+  max-width: 420px;
+  margin: 24px auto 40px;
+  border-collapse: collapse;
+}
+.players-table th,
+.players-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e3e6eb;
+  text-align: left;
+}
+.players-table th {
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  color: #55606e;
+}
+.players-table .players-place,
+.players-table .players-points {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.players-nick {
+  font-weight: 600;
+}
+.players-medal {
+  margin-left: 8px;
+}
+
+/* the Edit card form of a card whose chrono was deleted */
+.edit-chrono-missing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+/* the exam rules popup */
+.exam-info {
+  max-width: 440px;
+}
+.exam-info h3 {
+  margin: 12px 0 4px;
+  font-size: 15px;
+}
+.exam-info ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.exam-info li + li {
+  margin-top: 6px;
+}
+.exam-info-need {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+/* the * after the label of a required field */
+.required {
+  color: #b91c1c;
+}
+/* the admin form under the list on the Chronos page */
+.admin-chrono-form {
+  max-width: 480px;
+  margin: 24px 0 40px;
 }
 
 /* links to the admin pages in a page header */

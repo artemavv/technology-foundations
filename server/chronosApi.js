@@ -8,6 +8,8 @@
 //   GET    /api/memory                     user: { chronos: global (with `selected`), personal }
 //   PUT    /api/me/selected/:chronoId      user: put a global chronos on the memory line
 //   DELETE /api/me/selected/:chronoId      user: take it off
+//   POST   /api/me/import-guest            user: { selected: [ids], known: [ids] } the marks a visitor made before registering
+//                                          (kept in their browser); taken only while the account's memory line is still empty
 //   POST   /api/me/personal                user: { title, date, description? }
 //   PUT    /api/me/personal/:id            user: same body
 //   DELETE /api/me/personal/:id            user
@@ -17,6 +19,7 @@
 import { parseDate } from './parseDate.js'
 import { parseJsonBody, send } from './http.js'
 import { langMap } from './adminApi.js'
+import { EXAM_MAX } from '../src/training.js'
 
 const MAX_TITLE = 80
 const MAX_DESCRIPTION = 1000
@@ -80,10 +83,10 @@ export function shapeGlobal(row, cards, selected = false) {
   }
 }
 
-// `known` is only there when the query asked for it (a user's view, not the admin's)
-const knownOf = (row) => ('known' in row ? { known: Boolean(row.known) } : {})
+// `known` (and when it was marked, `knownAt`) is only there when the query asked for it (a user's view, not the admin's)
+const knownOf = (row) => ('known_at' in row ? { known: row.known_at != null, knownAt: row.known_at } : {})
 // the SQL for it: chronos alias `c`, the user id as a parameter
-const KNOWN = 'EXISTS(SELECT 1 FROM user_known k WHERE k.user_id = ? AND k.chrono_id = c.id) AS known'
+const KNOWN = '(SELECT k.known_at FROM user_known k WHERE k.user_id = ? AND k.chrono_id = c.id) AS known_at'
 
 export const shapePersonal = (row) => ({
   id: row.id,
@@ -96,6 +99,32 @@ export const shapePersonal = (row) => ({
   selected: true,
   ...knownOf(row),
 })
+
+// The chronos an exam covers: memorized (marked as known) and not passed yet, the EXAM_MAX most
+// recently memorized ones. Returns their ids, newest first.
+export const examIds = (db, userId) =>
+  db
+    .prepare(
+      `SELECT k.chrono_id FROM user_known k
+       WHERE k.user_id = ? AND NOT EXISTS (SELECT 1 FROM user_passed p WHERE p.user_id = k.user_id AND p.chrono_id = k.chrono_id)
+       ORDER BY k.known_at DESC, k.chrono_id DESC LIMIT ?`,
+    )
+    .all(userId, EXAM_MAX)
+    .map((r) => r.chrono_id)
+
+// how many times each chrono was answered correctly in the user's training (skipped answers
+// and exams don't count)
+const correctCounts = (db, userId) =>
+  new Map(
+    db
+      .prepare(
+        `SELECT a.chrono_id, COUNT(*) AS n FROM training_answers a JOIN training_runs r ON r.id = a.run_id
+         WHERE r.user_id = ? AND r.mode <> 'exam' AND a.correct = 1 AND a.skipped = 0 AND a.chrono_id IS NOT NULL
+         GROUP BY a.chrono_id`,
+      )
+      .all(userId)
+      .map((r) => [r.chrono_id, r.n]),
+  )
 
 // oldest first, like the timeline
 const byAge = (a, b) => b.mya - a.mya || a.id - b.id
@@ -153,6 +182,40 @@ export function bootstrapChronos(db, entries, langs, cards) {
   const added = importSeed(db, entries, langs, cardMap(cards))
   db.prepare("INSERT INTO meta (key, value) VALUES ('chronos_imported', ?)").run(String(Date.now()))
   return added
+}
+
+// Keep the chrono of a published card in step with it: it follows the card's date. When the card
+// has none, one is created only if `create` is set (the card was just published); an admin may
+// have deleted it, and an edit of the card must not bring it back. `chronoTitle` is the optional { lang: text } from the card form: for
+// each language in it, a text sets the chrono's title and an empty one makes the chrono use the
+// card's title. Languages not in it are left alone; a new chrono starts with the card's titles.
+// Throws if the result is not a valid chrono (the card is already saved then).
+export function syncCardChrono(db, card, chronoTitle, langs, create = false) {
+  const cardTitle = typeof card.title === 'string' ? { [langs[0]]: card.title } : (card.title ?? {})
+  const row = db.prepare('SELECT * FROM chronos WHERE card_id = ? AND owner_id IS NULL ORDER BY id LIMIT 1').get(card.id)
+  if (!row && !create) return
+  const title = row
+    ? JSON.parse(row.title_i18n)
+    : Object.fromEntries(
+        Object.entries(cardTitle)
+          .filter(([code, text]) => langs.includes(code) && text)
+          .map(([code, text]) => [code, text.slice(0, MAX_TITLE)]),
+      )
+  for (const [code, text] of Object.entries(chronoTitle ?? {})) {
+    const wanted = (text || cardTitle[code] || '').slice(0, MAX_TITLE)
+    if (wanted) title[code] = wanted
+    else delete title[code]
+  }
+  const { value, error } = validateGlobal({ title, cardId: card.id }, langs, cardMap([card]))
+  if (error) throw new Error(error)
+  if (!row) return insertGlobal(db, value)
+  db.prepare('UPDATE chronos SET time = ?, mya = ?, title_i18n = ?, updated_at = ? WHERE id = ?').run(
+    value.time,
+    value.mya,
+    JSON.stringify(value.title),
+    Date.now(),
+    row.id,
+  )
 }
 
 // A chrono for every published card that has none yet, linked to the card and titled
@@ -263,8 +326,9 @@ export async function memoryRoutes(ctx, req, res, url) {
   const known = url.match(/^\/api\/me\/known\/(\d+)$/)
   const selected = url.match(/^\/api\/me\/selected\/(\d+)$/)
   const personal = url === '/api/me/personal'
+  const importGuest = url === '/api/me/import-guest'
   const personalOne = url.match(/^\/api\/me\/personal\/(\d+)$/)
-  if (!isMemory && !selected && !known && !personal && !personalOne) return false
+  if (!isMemory && !selected && !known && !personal && !personalOne && !importGuest) return false
   const { db, user } = ctx
   if (!user) return send(res, 401, { error: 'Sign in first' }), true
 
@@ -273,17 +337,54 @@ export async function memoryRoutes(ctx, req, res, url) {
     const mine = new Set(
       db.prepare('SELECT chrono_id FROM user_chronos WHERE user_id = ?').all(user.id).map((r) => r.chrono_id),
     )
+    const counts = correctCounts(db, user.id)
+    const passed = new Set(
+      db.prepare('SELECT chrono_id FROM user_passed WHERE user_id = ?').all(user.id).map((r) => r.chrono_id),
+    )
+    const withCount = (c) => ({ ...c, correct: counts.get(c.id) ?? 0, passed: passed.has(c.id) })
     const chronos = db
       .prepare(`SELECT c.*, ${KNOWN} FROM chronos c WHERE c.owner_id IS NULL`)
       .all(user.id)
-      .map((r) => shapeGlobal(r, cards, mine.has(r.id)))
+      .map((r) => withCount(shapeGlobal(r, cards, mine.has(r.id))))
       .sort(byAge)
     const own = db
       .prepare(`SELECT c.*, ${KNOWN} FROM chronos c WHERE c.owner_id = ?`)
       .all(user.id, user.id)
-      .map(shapePersonal)
+      .map((r) => withCount(shapePersonal(r)))
       .sort(byAge)
     send(res, 200, { chronos, personal: own })
+    return true
+  }
+
+  if (importGuest && req.method === 'POST') {
+    const body = await parseJsonBody(req, res)
+    if (!body) return true
+    const ids = (v) => (Array.isArray(v) && v.length <= 2000 && v.every(Number.isInteger) ? v : null)
+    const sel = ids(body.selected)
+    const kn = ids(body.known)
+    if (!sel || !kn) return send(res, 400, { error: 'selected and known must be lists of chrono ids' }), true
+    const result = db.transaction(() => {
+      // a fresh account only: never mix a visitor's marks into a list the user has built
+      const has = db.prepare('SELECT 1 FROM user_chronos WHERE user_id = ? UNION SELECT 1 FROM user_known WHERE user_id = ?').get(user.id, user.id)
+      if (has) return { imported: false }
+      const isGlobal = db.prepare('SELECT 1 FROM chronos WHERE id = ? AND owner_id IS NULL')
+      const now = Date.now()
+      let selectedCount = 0
+      for (const id of new Set(sel)) {
+        if (!isGlobal.get(id)) continue // deleted since
+        db.prepare('INSERT OR IGNORE INTO user_chronos (user_id, chrono_id, added_at) VALUES (?, ?, ?)').run(user.id, id, now)
+        selectedCount++
+      }
+      let knownCount = 0
+      // in the order they were marked, so the newest are the latest memorized
+      for (const id of new Set(kn)) {
+        if (!db.prepare('SELECT 1 FROM user_chronos WHERE user_id = ? AND chrono_id = ?').get(user.id, id)) continue
+        db.prepare('INSERT OR IGNORE INTO user_known (user_id, chrono_id, known_at) VALUES (?, ?, ?)').run(user.id, id, now + knownCount)
+        knownCount++
+      }
+      return { imported: true, selected: selectedCount, known: knownCount }
+    })()
+    send(res, 200, result)
     return true
   }
 

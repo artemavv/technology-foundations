@@ -284,6 +284,80 @@ async function run() {
   r = await adm('GET', '/api/admin/chronos')
   check('admin chronos list carries no per-user known', r.status === 200 && r.body.every((c) => !('known' in c)))
 
+  // ---- marks made as a visitor, moved to the new account ----
+  const carol = client()
+  r = await anon('POST', '/api/me/import-guest', { selected: [], known: [] })
+  check('importing guest marks needs a session', r.status === 401, r.status)
+  await carol('POST', '/api/auth/register', { login: 'carol', nickname: 'Carol', password: 'carol-pass' })
+  r = await adm('GET', '/api/admin/users?status=pending')
+  await adm('POST', `/api/admin/users/${r.body.find((u) => u.login === 'carol').id}/approve`)
+  await carol('POST', '/api/auth/login', { login: 'carol', password: 'carol-pass' })
+  r = await anon('GET', '/api/chronos')
+  const [g1, g2, g3] = r.body.chronos.map((c) => c.id)
+  r = await carol('POST', '/api/me/import-guest', { selected: 'x', known: [] })
+  check('guest marks must be lists of ids', r.status === 400, r.status)
+  r = await carol('POST', '/api/me/import-guest', { selected: [g1, g2, g3, 999999], known: [g2, g1, 999999] })
+  check('guest marks move to a fresh account (unknown chronos are dropped)', r.status === 200 && r.body.imported === true && r.body.selected === 3 && r.body.known === 2, JSON.stringify(r.body))
+  r = await carol('GET', '/api/memory')
+  const cm = (id) => r.body.chronos.find((c) => c.id === id)
+  check('the imported marks show on the account', cm(g1).selected && cm(g2).selected && cm(g3).selected && cm(g1).known && cm(g2).known && !cm(g3).known && cm(g1).knownAt > cm(g2).knownAt, JSON.stringify(r.body.chronos.filter((c) => c.selected).map((c) => [c.id, c.known, c.knownAt])))
+  r = await carol('POST', '/api/me/import-guest', { selected: [], known: [] })
+  check('a second import is refused: the list is no longer fresh', r.status === 200 && r.body.imported === false, JSON.stringify(r.body))
+
+  // ---- exam ----
+  r = await alice('POST', '/api/training/runs', { mode: 'exam' })
+  check('an exam with nothing memorized is refused (400, code no_exam)', r.status === 400 && r.body.code === 'no_exam', JSON.stringify(r.body))
+  await alice('PUT', `/api/me/known/${mine.id}`)
+  await alice('PUT', `/api/me/known/${personal.id}`)
+  r = await alice('POST', '/api/training/runs', { mode: 'exam' })
+  check('an exam needs at least 5 memorized chronos (400, code no_exam)', r.status === 400 && r.body.code === 'no_exam' && /at least 5/.test(r.body.error), JSON.stringify(r.body))
+  const extra = []
+  for (let i = 0; i < 4; i++) {
+    r = await alice('POST', '/api/me/personal', { title: `Exam filler ${i}`, date: `${3000 + i * 100} BC` })
+    extra.push(r.body.id)
+    await alice('PUT', `/api/me/known/${r.body.id}`)
+  }
+  r = await alice('GET', '/api/memory')
+  const mineRow = r.body.chronos.find((c) => c.id === mine.id)
+  const ownRow = r.body.personal.find((c) => c.id === personal.id)
+  check('memory says when a chrono was memorized, and that it is not passed', typeof mineRow.knownAt === 'number' && mineRow.passed === false && ownRow.passed === false, JSON.stringify(mineRow))
+  const starsBefore = mineRow.correct
+  r = await alice('POST', '/api/training/runs', { mode: 'exam' })
+  check('an exam covers the memorized chronos', r.status === 201 && r.body.mode === 'exam' && r.body.chronos.length === 6, JSON.stringify(r.body))
+  const exam = r.body
+  r = await alice('POST', `/api/training/runs/${exam.id}/answers`, { answers: [{ seq: 0, chronoId: mine.id, skipped: true }] })
+  check('an exam question cannot be skipped', r.status === 400, r.status)
+  r = await alice('POST', `/api/training/runs/${exam.id}/answers`, { answers: [{ seq: 0, chronoId: 999999, correct: true }] })
+  check('an exam answer for a chrono outside the exam is refused', r.status === 400, r.status)
+  // the server grades: the client's "correct" is ignored
+  r = await alice('POST', `/api/training/runs/${exam.id}/answers`, { answers: [{ seq: 0, chronoId: mine.id, correct: false, answer: { value: mineRow.mya, unit: 'Mya' } }] })
+  check('a correct exam answer is accepted', r.status === 204, r.status)
+  r = await alice('POST', `/api/training/runs/${exam.id}/answers`, { answers: [{ seq: 1, chronoId: personal.id, correct: true, answer: { value: ownRow.mya * 3, unit: 'Mya' } }] })
+  check('a wrong exam answer is accepted', r.status === 204, r.status)
+  r = await alice('POST', `/api/training/runs/${exam.id}/answers`, { answers: [{ seq: 1, chronoId: personal.id, correct: true, answer: { value: ownRow.mya, unit: 'Mya' } }] })
+  check('an exam question that was answered keeps its answer', r.status === 204, r.status)
+  r = await alice('POST', `/api/training/runs/${exam.id}/finish`, {})
+  check('exam: one of two answered correct', r.status === 200 && r.body.total === 2 && r.body.correct === 1, JSON.stringify(r.body))
+  r = await anon('GET', '/api/players')
+  check('a passed chrono earned one competition point', r.body.players.find((p) => p.nickname === 'Alice Two')?.competition === 1, JSON.stringify(r.body))
+  r = await alice('GET', '/api/memory')
+  check('the passed chrono is marked, the other is not', r.body.chronos.find((c) => c.id === mine.id).passed === true && r.body.personal.find((c) => c.id === personal.id).passed === false)
+  r = await alice('POST', '/api/training/runs', { mode: 'exam' })
+  check('the next exam leaves out passed chronos', r.status === 201 && r.body.chronos.length === 5 && !r.body.chronos.some((c) => c.id === mine.id), JSON.stringify(r.body.chronos?.map((c) => c.id)))
+  await alice('POST', `/api/training/runs/${r.body.id}/answers`, { answers: [{ seq: 0, chronoId: personal.id, answer: { timeout: true } }] })
+  await alice('POST', `/api/training/runs/${r.body.id}/finish`, {})
+  r = await alice('GET', '/api/memory')
+  check('a timed out question passes nothing; exams add no training stars', r.body.personal.find((c) => c.id === personal.id).passed === false && r.body.chronos.find((c) => c.id === mine.id).correct === starsBefore, JSON.stringify(r.body.chronos.find((c) => c.id === mine.id)))
+  await alice('DELETE', `/api/me/known/${extra[0]}`)
+  r = await alice('POST', '/api/training/runs', { mode: 'exam' })
+  check('with fewer than 5 left the exam is refused again', r.status === 400 && r.body.code === 'no_exam', JSON.stringify(r.body))
+  await alice('DELETE', `/api/me/known/${personal.id}`)
+  r = await alice('POST', '/api/training/runs', { mode: 'exam-x' })
+  check('a run cannot be made an exam by name', r.status === 201 && r.body.mode !== 'exam', `${r.status} ${JSON.stringify(r.body)}`)
+  for (const id of extra) await alice('DELETE', `/api/me/personal/${id}`)
+  r = await alice('DELETE', `/api/me/selected/${mine.id}`)
+  r = await alice('PUT', `/api/me/selected/${mine.id}`)
+
   // ---- revoke, logout, deletes ----
   r = await adm('POST', `/api/admin/users/${aliceId}/revoke`)
   check('admin revokes', r.status === 204, r.status)
@@ -295,6 +369,19 @@ async function run() {
   check('logout', r.status === 204, r.status)
   r = await bob('GET', '/api/memory')
   check('after logout the session is gone', r.status === 401, r.status)
+
+  // ---- players ----
+  r = await anon('GET', '/api/players')
+  check(
+    'anyone can list the players: approved, non-admin, nickname only',
+    r.status === 200 &&
+      r.body.players.every((p) => Object.keys(p).sort().join() === 'competition,memory,nickname') &&
+      !r.body.players.some((p) => /^admin$/i.test(p.nickname)),
+    JSON.stringify(r.body),
+  )
+  r = await anon('GET', '/api/players')
+  const bobRow = r.body.players.find((p) => p.nickname === 'Bob')
+  check('a player starts with 0 points', bobRow?.competition === 0 && bobRow.memory === 0, JSON.stringify(r.body))
 
   // ---- login rate limit ----
   let last

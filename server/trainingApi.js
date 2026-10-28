@@ -2,6 +2,10 @@
 // recorded here, so that every run updates the user's statistics.
 //   POST /api/training/runs                  user: start a run on the user's chronos that are not marked as known
 //                                            (400 with code 'all_known' when they all are)
+//                                            { mode: 'exam' } starts an exam instead: the chronos the user has memorized and not
+//                                            passed yet (at most 50, the newest), 400 with code 'no_exam' when there are fewer than 5.
+//                                            In an exam the server grades the answers itself ({ value, unit } or { timeout });
+//                                            each chrono answered correctly is passed for good and earns a competition point.
 //   POST /api/training/runs/:id/answers      user: { answers: [{ seq, chronoId, correct, responseMs?, answer? }] }
 //                                            or { seq, chronoId, skipped: true } when the answer was only shown:
 //                                            kept, but neither correct nor incorrect (not in total, correct or stats)
@@ -9,7 +13,8 @@
 //   GET  /api/me/training/runs?limit=20      user: recent runs
 //   GET  /api/me/stats                       user: totals over finished runs, per chrono
 import { parseJsonBody, rateLimiter, send } from './http.js'
-import { cardMap, userChronos } from './chronosApi.js'
+import { cardMap, examIds, userChronos } from './chronosApi.js'
+import { EXAM_MIN, UNITS, isClose, toMya } from '../src/training.js'
 
 const MAX_ANSWERS = 500 // per run
 const MAX_ANSWER_TEXT = 1000
@@ -18,7 +23,7 @@ const RUN_LIMIT = { count: 30, windowMs: 60 * 60 * 1000 } // per user
 
 const runLimit = rateLimiter(RUN_LIMIT)
 
-const mode = (v) => (typeof v === 'string' && /^[\w-]{1,32}$/.test(v) ? v : 'default')
+const mode = (v) => (typeof v === 'string' && v !== 'exam' && /^[\w-]{1,32}$/.test(v) ? v : 'default')
 const runJson = (r) => ({
   id: r.id,
   mode: r.mode,
@@ -74,6 +79,47 @@ const saveAnswers = (db, runId, rows) => {
   }
 }
 
+// An exam run's rows, graded here instead of trusting the client: only chronos the exam was
+// started with, once per question (a question already answered keeps its answer), no skipping.
+// Returns the rows to store, or { error }.
+function gradeExam(db, run, chronosById, rows) {
+  const allowed = new Set(JSON.parse(run.meta ?? '{}').chronos ?? [])
+  const have = new Set(db.prepare('SELECT seq FROM training_answers WHERE run_id = ?').all(run.id).map((r) => r.seq))
+  const out = []
+  for (const row of rows) {
+    if (!allowed.has(row.chronoId)) return { error: 'That chrono is not part of this exam' }
+    if (row.skipped) return { error: 'An exam question cannot be skipped' }
+    if (have.has(row.seq)) continue
+    have.add(row.seq)
+    const given = row.answer ? JSON.parse(row.answer) : null
+    const unit = given?.unit
+    const valid = Number.isFinite(given?.value) && given.value > 0 && (UNITS.includes(unit) || unit === 'Ya')
+    const chrono = chronosById.get(row.chronoId)
+    out.push({ ...row, correct: Boolean(valid && chrono && isClose(toMya(given.value, unit), chrono.mya)) })
+  }
+  return { value: out }
+}
+
+// Each chrono answered correctly in an exam, and memorized, is passed once, for one competition point.
+function awardPasses(db, userId, rows) {
+  const now = Date.now()
+  for (const a of rows) {
+    if (!a.correct || a.skipped) continue
+    if (!db.prepare('SELECT 1 FROM user_known WHERE user_id = ? AND chrono_id = ?').get(userId, a.chronoId)) continue
+    const { changes } = db
+      .prepare('INSERT OR IGNORE INTO user_passed (user_id, chrono_id, passed_at) VALUES (?, ?, ?)')
+      .run(userId, a.chronoId, now)
+    if (changes) db.prepare('UPDATE users SET competition_points = competition_points + 1 WHERE id = ?').run(userId)
+  }
+}
+
+// An exam's rows graded, other runs' rows as sent. Returns { value } or { error }.
+async function gradeFor(ctx, run, rows) {
+  if (run.mode !== 'exam') return { value: rows }
+  const mine = userChronos(ctx.db, ctx.user.id, cardMap(await ctx.loadCards()))
+  return gradeExam(ctx.db, run, new Map(mine.map((c) => [c.id, c])), rows)
+}
+
 // The run if it is the user's; otherwise answers 404 and returns null.
 const ownRun = (db, res, userId, id) => {
   const run = db.prepare('SELECT * FROM training_runs WHERE id = ? AND user_id = ?').get(id, userId)
@@ -105,12 +151,22 @@ export async function trainingRoutes(ctx, req, res, url) {
       return send(res, 429, { error: 'Too many training runs, try again later' }), true
     }
     const mine = userChronos(db, user.id, cardMap(await ctx.loadCards()))
-    if (mine.length === 0) {
-      return send(res, 400, { error: 'Add some chronos to your memory line first' }), true
-    }
-    const chronos = mine.filter((c) => !c.known)
-    if (chronos.length === 0) {
-      return send(res, 400, { error: 'All your chronos are marked as known', code: 'all_known' }), true
+    const exam = body.mode === 'exam'
+    let chronos
+    if (exam) {
+      const ids = new Set(examIds(db, user.id))
+      chronos = mine.filter((c) => ids.has(c.id))
+      if (chronos.length < EXAM_MIN) {
+        return send(res, 400, { error: `You need at least ${EXAM_MIN} memorized chronos to start the exam`, code: 'no_exam' }), true
+      }
+    } else {
+      if (mine.length === 0) {
+        return send(res, 400, { error: 'Add some chronos to your memory line first' }), true
+      }
+      chronos = mine.filter((c) => !c.known)
+      if (chronos.length === 0) {
+        return send(res, 400, { error: 'All your chronos are marked as known', code: 'all_known' }), true
+      }
     }
     runLimit.hit(user.id)
     const now = Date.now()
@@ -118,9 +174,9 @@ export async function trainingRoutes(ctx, req, res, url) {
       `UPDATE training_runs SET status = 'abandoned' WHERE user_id = ? AND status = 'in_progress' AND started_at < ?`,
     ).run(user.id, now - STALE_MS)
     const { lastInsertRowid } = db
-      .prepare('INSERT INTO training_runs (user_id, mode, started_at) VALUES (?, ?, ?)')
-      .run(user.id, mode(body.mode), now)
-    send(res, 201, { id: lastInsertRowid, startedAt: now, chronos })
+      .prepare('INSERT INTO training_runs (user_id, mode, started_at, meta) VALUES (?, ?, ?, ?)')
+      .run(user.id, exam ? 'exam' : mode(body.mode), now, exam ? JSON.stringify({ chronos: chronos.map((c) => c.id) }) : null)
+    send(res, 201, { id: lastInsertRowid, startedAt: now, mode: exam ? 'exam' : 'default', chronos })
     return true
   }
 
@@ -132,10 +188,15 @@ export async function trainingRoutes(ctx, req, res, url) {
     if (run.status !== 'in_progress') return send(res, 409, { error: 'The run is over' }), true
     const checked = checkAnswers(db, user.id, body.answers)
     if (checked.error) return send(res, 400, { error: checked.error }), true
-    if (overCap(db, run.id, checked.value)) {
+    const graded = await gradeFor(ctx, run, checked.value)
+    if (graded.error) return send(res, 400, { error: graded.error }), true
+    if (overCap(db, run.id, graded.value)) {
       return send(res, 400, { error: `A run holds at most ${MAX_ANSWERS} answers` }), true
     }
-    db.transaction(() => saveAnswers(db, run.id, checked.value))()
+    db.transaction(() => {
+      saveAnswers(db, run.id, graded.value)
+      if (run.mode === 'exam') awardPasses(db, user.id, graded.value)
+    })()
     send(res, 204)
     return true
   }
@@ -151,14 +212,17 @@ export async function trainingRoutes(ctx, req, res, url) {
     if (body.answers !== undefined) {
       const checked = checkAnswers(db, user.id, body.answers)
       if (checked.error) return send(res, 400, { error: checked.error }), true
-      if (overCap(db, run.id, checked.value)) {
+      const graded = await gradeFor(ctx, run, checked.value)
+      if (graded.error) return send(res, 400, { error: graded.error }), true
+      if (overCap(db, run.id, graded.value)) {
         return send(res, 400, { error: `A run holds at most ${MAX_ANSWERS} answers` }), true
       }
-      rows = checked.value
+      rows = graded.value
     }
     const now = Date.now()
     db.transaction(() => {
       saveAnswers(db, run.id, rows)
+      if (run.mode === 'exam') awardPasses(db, user.id, rows)
       const sum = db
         .prepare(
           `SELECT COALESCE(SUM(skipped = 0), 0) total, COALESCE(SUM(correct), 0) correct, COALESCE(SUM(skipped), 0) skipped

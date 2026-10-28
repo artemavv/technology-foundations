@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import logo from './assets/icon-43.png'
 import { login, logout, register, safeNext, useUser } from './auth.js'
 import { useLang } from './i18n.jsx'
+import { importGuestMarks } from './memoryStore.js'
 
 export default function LoginPage() {
   const { t, lang } = useLang()
@@ -40,6 +41,7 @@ export default function LoginPage() {
         setConfirm('')
       } else {
         await login(name, password)
+        await importGuestMarks() // what was marked before registering joins the account
         window.location.assign(next)
         return
       }

@@ -5,12 +5,15 @@
 // line is listed: the chronos they put on it plus their own.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api, logout, useUser } from './auth.js'
+import AdminChronoForm from './components/AdminChronoForm.jsx'
 import AdminNav from './components/AdminNav.jsx'
 import CardModal from './components/CardModal.jsx'
 import SiteHeading from './components/SiteHeading.jsx'
 import ChronoModal from './components/ChronoModal.jsx'
+import ExamInfoModal from './components/ExamInfoModal.jsx'
 import { useLang } from './i18n.jsx'
 import { storeFor } from './memoryStore.js'
+import { EXAM_MAX, EXAM_MIN } from './training.js'
 
 const byAge = (a, b) => b.mya - a.mya || a.id - b.id
 
@@ -29,9 +32,29 @@ const Pencil = () => (
   </svg>
 )
 
-function Row({ chrono, mine, busy, onToggle, onKnown, onEdit, onDelete, onOpenCard }) {
+// Three stars before the title on My chronos: one is filled yellow for each correct answer in
+// training, up to three. Each answer after the third turns one more star orange, from the
+// left, so 4 answers give 1 orange + 2 yellow stars and 6 or more give 3 orange ones.
+const MAX_STARS = 3
+function Stars({ count, label }) {
+  const orange = Math.min(Math.max(count - MAX_STARS, 0), MAX_STARS)
+  const filled = Math.min(count, MAX_STARS)
+  return (
+    <span className="memory-stars" title={label} aria-label={label} role="img">
+      {Array.from({ length: MAX_STARS }, (_, i) => (
+        <span key={i} className={i < orange ? 'memory-star-hot' : i < filled ? 'memory-star-on' : undefined} aria-hidden="true">
+          ★
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function Row({ chrono, mine, admin, busy, onToggle, onKnown, onEdit, onDelete, onAdminDelete, onOpenCard }) {
   const { pick, t } = useLang()
   const title = chrono.personal ? chrono.title : pick(chrono.title)
+  // an admin can delete any global chrono, on the full list
+  const adminDelete = admin && !mine && !chrono.personal
   return (
     <li className={`memory-row${chrono.selected && !mine ? ' memory-on' : ''}${mine && chrono.known ? ' memory-known' : ''}`}>
       {!mine && !chrono.personal && (
@@ -63,22 +86,8 @@ function Row({ chrono, mine, busy, onToggle, onKnown, onEdit, onDelete, onOpenCa
       )}
       <span className="nav-time">{chrono.time}</span>
       <span className="memory-text">
-        {chrono.cardId ? (
-          <button
-            type="button"
-            className="memory-card"
-            aria-haspopup="dialog"
-            title={t('memoryOpenCard')}
-            aria-label={t('memoryOpenCard')}
-            onClick={() => onOpenCard(chrono.cardId)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="4" y="3" width="16" height="18" rx="2.5" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        ) : chrono.personal ? (
-          // an own chrono has no card, so its icon slot holds the Edit button
+        {chrono.personal ? (
+          // an own chrono has no card, so its icon slot holds the Edit button; the others keep an empty slot
           <button
             type="button"
             className="memory-card memory-edit-btn"
@@ -93,6 +102,14 @@ function Row({ chrono, mine, busy, onToggle, onKnown, onEdit, onDelete, onOpenCa
         ) : (
           <span className="memory-card-slot" aria-hidden="true" />
         )}
+        {mine &&
+          (chrono.passed ? (
+            <span className="memory-passed" role="img" aria-label={t('memoryPassed')} title={t('memoryPassed')}>
+              ★
+            </span>
+          ) : (
+            <Stars count={chrono.correct ?? 0} label={t('memoryCorrectCount', chrono.correct ?? 0)} />
+          ))}
         <span className="memory-main">
           {chrono.personal ? (
             // the title of an own chrono opens the editor too (the pencil is the keyboard-friendly way in)
@@ -103,15 +120,26 @@ function Row({ chrono, mine, busy, onToggle, onKnown, onEdit, onDelete, onOpenCa
             >
               {title}
             </span>
+          ) : chrono.cardId ? (
+            // the title opens the linked card in a popup
+            <button
+              type="button"
+              className="nav-title memory-title-edit memory-title-card"
+              aria-haspopup="dialog"
+              title={t('memoryOpenCard')}
+              onClick={() => onOpenCard(chrono.cardId)}
+            >
+              {title}
+            </button>
           ) : (
-            <span className="nav-title">{title}</span>
+            <span className={`nav-title${mine ? '' : ' memory-no-card'}`}>{title}</span>
           )}
           {chrono.personal && <span className="tr-badge">{t('memoryMine')}</span>}
           {!mine && chrono.selected && chrono.known && <span className="tr-badge tr-badge-known">{t('memoryKnown')}</span>}
           {chrono.description && <span className="memory-description">{chrono.description}</span>}
         </span>
       </span>
-      {(chrono.personal || mine) && (
+      {(chrono.personal || mine || adminDelete) && (
         <span className="memory-actions memory-actions-inline">
           {chrono.personal ? (
             <button
@@ -120,6 +148,17 @@ function Row({ chrono, mine, busy, onToggle, onKnown, onEdit, onDelete, onOpenCa
               aria-label={`${t('memoryDelete')}: ${title}`}
               title={`${t('memoryDelete')}: ${title}`}
               onClick={() => onDelete(chrono)}
+              disabled={busy}
+            >
+              <Trash />
+            </button>
+          ) : adminDelete ? (
+            <button
+              type="button"
+              className="icon-btn memory-delete-btn"
+              aria-label={`${t('memoryDelete')}: ${title}`}
+              title={`${t('memoryDelete')}: ${title}`}
+              onClick={() => onAdminDelete(chrono, title)}
               disabled={busy}
             >
               <Trash />
@@ -147,6 +186,7 @@ export default function MemoryPage({ mine = false }) {
   const { user, loading } = useUser()
   const [data, setData] = useState(null) // { chronos, personal }
   const [modal, setModal] = useState(null) // null | { chrono? }
+  const [examInfo, setExamInfo] = useState(false) // the exam rules popup
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [shownCard, setShownCard] = useState(null)
@@ -180,6 +220,18 @@ export default function MemoryPage({ mine = false }) {
     [data],
   )
 
+  // the exam covers the memorized chronos that are not passed yet: the EXAM_MAX newest (same rule as the server)
+  const examCount = useMemo(
+    () =>
+      data
+        ? Math.min(
+            EXAM_MAX,
+            [...data.chronos.filter((c) => c.selected), ...data.personal].filter((c) => c.known && !c.passed).length,
+          )
+        : 0,
+    [data],
+  )
+
   const setSelected = useCallback((id, selected) => {
     setData((d) => ({ ...d, chronos: d.chronos.map((c) => (c.id === id ? { ...c, selected } : c)) }))
   }, [])
@@ -199,7 +251,7 @@ export default function MemoryPage({ mine = false }) {
 
   // optimistic, like toggle
   const setKnown = useCallback((chrono, known) => {
-    const flip = (list) => list.map((c) => (c.id === chrono.id ? { ...c, known } : c))
+    const flip = (list) => list.map((c) => (c.id === chrono.id ? { ...c, known, knownAt: known ? Date.now() : null } : c))
     setData((d) => ({ ...d, chronos: flip(d.chronos), personal: flip(d.personal) }))
   }, [])
   const toggleKnown = async (chrono) => {
@@ -217,7 +269,11 @@ export default function MemoryPage({ mine = false }) {
   const saved = (chrono) =>
     setData((d) => ({
       ...d,
-      personal: [...d.personal.filter((c) => c.id !== chrono.id), chrono].sort(byAge),
+      // the server's answer to a save doesn't carry the stars: keep the ones the row had
+      personal: [
+        ...d.personal.filter((c) => c.id !== chrono.id),
+        { correct: d.personal.find((c) => c.id === chrono.id)?.correct ?? 0, ...chrono },
+      ].sort(byAge),
     }))
 
   const remove = async (chrono) => {
@@ -227,6 +283,20 @@ export default function MemoryPage({ mine = false }) {
     try {
       await api('DELETE', `/api/me/personal/${chrono.id}`)
       setData((d) => ({ ...d, personal: d.personal.filter((c) => c.id !== chrono.id) }))
+    } catch (err) {
+      setError(err.message)
+    }
+    setBusy(false)
+  }
+
+  // admins only: a global chrono disappears for everybody (and from all memory lines)
+  const adminRemove = async (chrono, title) => {
+    if (!window.confirm(t('chronosConfirmDelete', title))) return
+    setBusy(true)
+    setError('')
+    try {
+      await api('DELETE', `/api/admin/chronos/${chrono.id}`)
+      setData((d) => ({ ...d, chronos: d.chronos.filter((c) => c.id !== chrono.id) }))
     } catch (err) {
       setError(err.message)
     }
@@ -252,6 +322,9 @@ export default function MemoryPage({ mine = false }) {
         <SiteHeading sub={mine ? t('myChronos') : undefined} />
         {user?.isAdmin && <AdminNav />}
         <div className={`memory-account${user ? '' : ' memory-guest'}`}>
+          <a className="memory-profile" href={`/players.html?lang=${lang}`}>
+            {t('playersTitle')}
+          </a>
           {user ? (
             <>
               <a className="memory-profile" href={`/profile.html?lang=${lang}`} title={t('profileTitle')}>
@@ -262,7 +335,7 @@ export default function MemoryPage({ mine = false }) {
               </button>
             </>
           ) : (
-            <a href={`/login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}>
+            <a className="memory-login" href={`/login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}>
               {t('accountLogIn')}
             </a>
           )}
@@ -281,6 +354,7 @@ export default function MemoryPage({ mine = false }) {
             {t('memoryAdd')}
           </button>
         )}
+        {mine && <span className="memory-toolbar-break" aria-hidden="true" />}
         {mine &&
           (data && trainCount > 0 ? (
             <a className="memory-train-btn" href={`/train.html?lang=${lang}`}>
@@ -297,6 +371,24 @@ export default function MemoryPage({ mine = false }) {
               {t('trainStart')}
             </button>
           ))}
+        {mine && (
+          // the exam is for accounts (its points and passed chronos live on the server): a guest's
+          // button only opens the popup, which says so, as does one with too few memorized chronos
+          user && data && examCount >= EXAM_MIN ? (
+            <a className="memory-train-btn memory-exam-btn" href={`/train.html?mode=exam&lang=${lang}`}>
+              {t('examButton', examCount)}
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="memory-train-btn memory-exam-btn memory-exam-inactive"
+              aria-haspopup="dialog"
+              onClick={() => setExamInfo(true)}
+            >
+              {t('examButton', examCount)}
+            </button>
+          )
+        )}
       </div>
       {!user && (
         <p className="memory-note">
@@ -339,15 +431,25 @@ export default function MemoryPage({ mine = false }) {
             key={c.id}
             chrono={c}
             mine={mine}
+            admin={Boolean(user?.isAdmin)}
             busy={busy}
             onToggle={toggle}
             onKnown={toggleKnown}
             onEdit={(chrono) => setModal({ chrono })}
             onDelete={remove}
+            onAdminDelete={adminRemove}
             onOpenCard={openCard}
           />
         ))}
       </ul>
+      {user?.isAdmin && !mine && data && (
+        <AdminChronoForm
+          onAdded={(chrono) =>
+            setData((d) => ({ ...d, chronos: [...d.chronos, { ...chrono, selected: false, known: false, correct: 0 }] }))
+          }
+        />
+      )}
+      {examInfo && <ExamInfoModal guest={!user} onClose={() => setExamInfo(false)} />}
       {shownCard && <CardModal card={shownCard} onClose={() => setShownCard(null)} />}
       {modal && <ChronoModal chrono={modal.chrono} onSaved={saved} onClose={() => setModal(null)} />}
     </div>

@@ -9,7 +9,7 @@ const PAGES = [
   ['/translations.html', 'translationsTitle'],
 ]
 
-// Links to the Memory line and the admin pages, for page headers; the page being shown is marked, and
+// Links to the Chronos page and the admin pages, for page headers; the page being shown is marked, and
 // a link shows (X) when X accounts / proposed cards wait for approval. A page that
 // already holds one of the lists passes its length as `users` / `proposals`, which
 // keeps the count current as it approves or rejects; the other count is fetched.

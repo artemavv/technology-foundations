@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { createCard, deleteCard, saveCard, sourcesToText } from '../admin.js'
+import { createCard, deleteCard, fetchChronos, saveCard, saveChrono, sourcesToText } from '../admin.js'
 import { useLang, wikipediaUrl } from '../i18n.jsx'
 import PictureField from './PictureField.jsx'
 
@@ -23,6 +23,41 @@ export default function EditModal({ card, admin, onSaved, onDeleted, onClose }) 
     photo: card.photo ?? '',
     illustration: card.illustration ?? '',
   })
+  // Admins also set the title of the card's chrono (empty: the card's title). Its current value
+  // is fetched; until it is there (or if that fails) the field is not sent, so nothing is overwritten.
+  // A card whose chrono was deleted gets a Create chrono button instead. A new or pending card
+  // gets its chrono when it is published.
+  const [chronoTitle, setChronoTitle] = useState('')
+  const [chronoState, setChronoState] = useState(isNew || isPending ? 'exists' : 'loading') // | 'missing' | 'failed'
+  useEffect(() => {
+    if (!admin || isNew || isPending) return
+    fetchChronos()
+      .then((list) => {
+        const chrono = list.filter((c) => c.cardId === card.id).sort((a, b) => a.id - b.id)[0]
+        const text = chrono?.title?.[lang] ?? ''
+        // a title equal to the card's own means "use the card's title": shown as empty
+        setChronoTitle(text === own(card.title) ? '' : text)
+        setChronoState(chrono ? 'exists' : 'missing')
+      })
+      .catch(() => setChronoState('failed'))
+  }, [])
+
+  const createChrono = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      const titles = typeof card.title === 'string' ? { [def]: card.title } : card.title
+      await saveChrono(null, {
+        title: Object.fromEntries(Object.entries(titles).map(([code, text]) => [code, text.slice(0, 80)])),
+        cardId: card.id,
+      })
+      setChronoTitle('')
+      setChronoState('exists')
+    } catch (err) {
+      setError(err.message)
+    }
+    setSaving(false)
+  }
   // a translation may be left empty (the card then falls back to the default language)
   const required = isNew || lang === def
   const [error, setError] = useState('')
@@ -46,6 +81,7 @@ export default function EditModal({ card, admin, onSaved, onDeleted, onClose }) 
       sources: sources.split('\n'),
       wikipedia: { [lang]: wikipedia },
       ...(admin ? pictures : {}), // only admins can attach pictures
+      ...(admin && chronoState === 'exists' ? { chrono: { [lang]: chronoTitle } } : {}),
     }
     try {
       if (isNew) {
@@ -116,6 +152,27 @@ export default function EditModal({ card, admin, onSaved, onDeleted, onClose }) 
             required={required}
           />
         </label>
+        {admin &&
+          (chronoState === 'missing' ? (
+            <div className="edit-chrono-missing">
+              <span className="edit-hint">{t('chronoMissing')}</span>
+              <button type="button" onClick={createChrono} disabled={saving}>
+                {t('chronoCreate')}
+              </button>
+            </div>
+          ) : (
+            <label>
+              {t('chronoTitle')}
+              <input
+                value={chronoTitle}
+                onChange={(e) => setChronoTitle(e.target.value)}
+                placeholder={title}
+                maxLength={80}
+                disabled={chronoState !== 'exists'}
+              />
+              <span className="edit-hint">{t('chronoTitleHint')}</span>
+            </label>
+          ))}
         <label>
           {t('date')}
           <input

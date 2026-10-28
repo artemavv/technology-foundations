@@ -21,6 +21,7 @@ export default defineConfig(() => {
           memory: 'memory.html',
           myChronos: 'my-chronos.html',
           profile: 'profile.html',
+          players: 'players.html',
           train: 'train.html',
           users: 'users.html',
           chronos: 'chronos.html',

@@ -121,6 +121,21 @@ const MIGRATIONS = [
   ALTER TABLE users ADD COLUMN nickname_key TEXT;
   CREATE UNIQUE INDEX users_nickname_key ON users(nickname_key);
   `,
+  // 6: competition points, earned in exam runs (not implemented yet). Memory points need no
+  // column: they are the number of global chronos the user has marked as known.
+  `
+  ALTER TABLE users ADD COLUMN competition_points INTEGER NOT NULL DEFAULT 0;
+  `,
+  // 7: chronos a user has passed in an exam (kept for good: each one earned a competition point once)
+  `
+  CREATE TABLE user_passed (
+    user_id   INTEGER NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+    chrono_id INTEGER NOT NULL REFERENCES chronos(id) ON DELETE CASCADE,
+    passed_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, chrono_id)
+  ) WITHOUT ROWID;
+  CREATE INDEX user_passed_chrono ON user_passed(chrono_id);
+  `,
 ]
 
 // better-sqlite3 is loaded here, not at the top, so `vite build` and the rest of

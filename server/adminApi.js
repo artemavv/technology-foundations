@@ -133,6 +133,12 @@ function validate(body, langs) {
   const status = langStatus(body.langStatus, langs)
   if (status.error) return status
   if (status.value) out.langStatus = status.value
+  // optional title of the card's chrono (not part of the card): see syncCardChrono
+  if (body.chrono !== undefined) {
+    const chrono = langMap(body.chrono, 'Chrono title', langs)
+    if (chrono.error) return chrono
+    out.chrono = chrono.value
+  }
   for (const key of ['photo', 'illustration']) {
     const v = body[key]
     if (v === undefined) continue
@@ -314,7 +320,18 @@ export default function adminApi() {
         return title ? { url: s.url, title } : s
       }),
     )
-    return { value, def: langs[0], approve: body.approve === true }
+    return { value, langs, def: langs[0], approve: body.approve === true }
+  }
+
+  // a card gets a chrono when it is published (`create`) and the chrono is kept in step when the card
+  // is edited; an edit never makes one, as an admin may have deleted it (the Edit card form can).
+  // The card is saved already, so a failure is only logged.
+  const syncChrono = (req, card, parsed, create = false) => {
+    try {
+      req.pfSyncChrono?.(card, parsed.value.chrono, parsed.langs, create)
+    } catch (e) {
+      console.warn(`chrono of card ${card.id}: ${e.message}`)
+    }
   }
 
   const deny = async (res) => {
@@ -395,6 +412,7 @@ export default function adminApi() {
         })
         if (!card) return send(res, 503, { error: 'Too many cards awaiting review' })
         if (card.error) return send(res, 400, { error: card.error })
+        if (admin) syncChrono(req, card, parsed, true)
         return send(res, 201, admin ? card : { status: 'pending' })
       } catch {
         return send(res, 500, { error: 'Could not save' })
@@ -479,6 +497,8 @@ export default function adminApi() {
           return { ...approved, status: 'published' }
         })
         if (card?.error) return send(res, 400, { error: card.error })
+        // approving a pending card publishes it: that is when its chrono is made
+        if (card?.status === 'published') syncChrono(req, card, parsed, parsed.approve)
         return card ? send(res, 200, card) : send(res, 404, { error: 'No such card' })
       } catch {
         return send(res, 500, { error: 'Could not save' })

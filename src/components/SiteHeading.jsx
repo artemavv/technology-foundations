@@ -2,7 +2,7 @@ import logo from '../assets/icon-43.png'
 import { useLang } from '../i18n.jsx'
 
 // Breadcrumb heading of the user pages: the site logo (the <h1>, a link to the timeline) >
-// "Memory line" (the pages below are its sub-pages) > the sub-page, if this is one.
+// "Chronos" (the pages below are its sub-pages) > the sub-page, if this is one.
 // The page being shown is the <h2>. The separators (">") are drawn in CSS before each step, so that a
 // separator wraps together with the step it leads to.
 export default function SiteHeading({ sub }) {

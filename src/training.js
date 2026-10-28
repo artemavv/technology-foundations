@@ -8,6 +8,13 @@ export const YEARS_ABOVE = 2000
 // An answer counts as correct when its age is within this share of the real age.
 export const TOLERANCE = 0.05
 
+// Exam: every question must be answered within this time (ms); an exam covers at most
+// EXAM_MAX chronos, the most recently memorized ones that have not been passed yet, and at
+// least EXAM_MIN.
+export const EXAM_MS = 7000
+export const EXAM_MAX = 50
+export const EXAM_MIN = 5 // an exam needs at least this many chronos
+
 // A correct answer goes on to the next question by itself after this long (ms).
 export const AUTO_NEXT_MS = 2000
 

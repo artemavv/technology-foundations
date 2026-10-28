@@ -36,8 +36,9 @@ import {
   verifyPassword,
 } from './auth.js'
 import { clientIp, parseCookies, parseJsonBody, rateLimiter, send } from './http.js'
-import { adminChronosRoutes, bootstrapChronos, memoryRoutes } from './chronosApi.js'
+import { adminChronosRoutes, bootstrapChronos, memoryRoutes, syncCardChrono } from './chronosApi.js'
 import { trainingRoutes } from './trainingApi.js'
+import { playersRoutes } from './playersApi.js'
 
 const MAX_PENDING_USERS = 200
 const MIN_PASSWORD = 6
@@ -47,7 +48,7 @@ const FAILED_LOGIN_NAME = { count: 5, windowMs: 15 * 60 * 1000 }
 const REGISTER_LIMIT = { count: Number(process.env.REGISTER_LIMIT) || 5, windowMs: 60 * 60 * 1000 }
 
 // everything this plugin answers; /api/admin/check and the card routes stay with adminApi
-const OURS = /^\/api\/(auth|me|memory|chronos|training|admin\/users|admin\/chronos)(\/|$)/
+const OURS = /^\/api\/(auth|me|memory|chronos|training|players|admin\/users|admin\/chronos)(\/|$)/
 
 const userJson = (r) => ({
   id: r.id,
@@ -286,6 +287,8 @@ export default function accountsApi({ dbFile } = {}) {
     }
     const user = hasSession ? sessionUser(db, req) : null
     req.pfAdmin = user?.isAdmin === true
+    // the card API (adminApi.js) has no database: it calls this when a card is published or edited
+    if (req.pfAdmin) req.pfSyncChrono = (card, chronoTitle, langs, create) => syncCardChrono(db, card, chronoTitle, langs, create)
     if ((ours || req.pfAdmin) && !csrfOk(req)) return send(res, 403, { error: 'Request not allowed' })
     if (!ours) return next()
 
@@ -309,6 +312,7 @@ export default function accountsApi({ dbFile } = {}) {
 
     if (await memoryRoutes(ctx, req, res, url)) return
     if (await trainingRoutes(ctx, req, res, url)) return
+    if (playersRoutes(ctx, req, res, url)) return
     return send(res, 404, { error: 'Not found' })
   }
 

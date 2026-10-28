@@ -37,7 +37,9 @@ export function parseDate(text) {
     return { error: `Unknown date unit "${m[2]}" (use Gya, Mya, Kya or BC)` }
   }
   if (!(mya >= MIN_MYA && mya <= MAX_MYA)) {
-    return { error: 'Date must be between 13.8 Gya and 2500 BC' }
+    const range = 'Date must be between 13.8 Gya and 2500 BC'
+    // a bare number is years ago, which is easy to forget when typing a year
+    return { error: unit === '' ? `${range}. A number without a unit means years ago; write "${m[1]} BC" for a year BC` : range }
   }
   return { time, mya }
 }

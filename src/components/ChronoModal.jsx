@@ -42,11 +42,17 @@ export default function ChronoModal({ chrono, onSaved, onClose }) {
       <form className="edit-form" onSubmit={submit}>
         <h2>{heading}</h2>
         <label>
-          {t('title')}
+          <span>
+            {t('title')}
+            <span className="required" aria-hidden="true"> *</span>
+          </span>
           <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} required autoFocus />
         </label>
         <label>
-          {t('date')}
+          <span>
+            {t('date')}
+            <span className="required" aria-hidden="true"> *</span>
+          </span>
           <input
             value={date}
             onChange={(e) => setDate(e.target.value)}
